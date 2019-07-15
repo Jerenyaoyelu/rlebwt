@@ -1,0 +1,303 @@
+
+<!-- saved from url=(0052)https://www.cse.unsw.edu.au/~wong/cs9319-2019a2.html -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+    <title>COMP9319 2019T2 Assignment 2</title>
+</head>
+<body>
+<h1>COMP9319 2019T2 Assignment 2: RLFM Index (Run-Length Encoded BWT) </h1>
+Your task in this assignment is to create a search program that implements BWT backward search, 
+which can efficiently search a RLFM encoded record file. The original file (before RLFM) format is:
+
+    <pre>[&lt;offset1&gt;]&lt;text1&gt;[&lt;offset2&gt;]&lt;text2&gt;[&lt;offset3&gt;]&lt;text3&gt;... ...</pre>
+    where <code>&lt;offset1&gt;</code>, <code>&lt;offset2&gt;</code>, <code>&lt;offset3&gt;</code>, etc. are 
+    integer values that are used as unique record identifiers;<br>
+    and <code>&lt;text1&gt;</code>, <code>&lt;text2&gt;</code>, <code>&lt;text3&gt;</code>, etc. are record values (text), 
+which include any ASCII alphabets with ASCII values from 32 to 126, tab (ASCII 9) 
+and newline (ASCII 10 and 13).
+For simplicity, there will be no open or close square bracket in the record values.
+<br>
+<br>
+
+Your C/C++ program, called <b> rlebwt </b>, accepts:
+<ol>
+<li> a command argument of either:
+<ul>
+<li> <code>-m</code> for the number of matching substrings (count duplicates), 
+</li><li> <code>-r</code> for the number of unique matching records,  
+</li><li> <code>-a</code> for listing the identifiers of all the matching records (no duplicates and in ascending order), or
+</li><li> <code>-n</code> for displaying the record value of a given record identifier; 
+</li></ul>
+</li><li> the path to a RLFM encoded file (without its file extension); 
+</li><li> the path to a index folder;  and 
+</li><li> a quoted query string (i.e., the search term) for option <code>-m, -r, -a</code>, or a quoted record identifier for option <code>-n</code>
+</li></ol>
+as commandline input arguments. 
+The search term can be up to 512 characters. 
+To make the assignment easier, we assume that the search is case sensitive.
+<br>
+<br>
+
+If  <code>-a</code> is specified, using the given query string, <b> rlebwt</b>  will perform backward search on the given RLFM encoded file, and output the sorted and unique identifiers (no duplicates) of all the records that contain the input query string to the standard output.
+Each identifier is enclosed in a pair of square brackets, one line 
+(ending with a '\n') for each match.
+<br>
+<br>
+If  <code>-m</code> is specified, given a query string, <b> rlebwt</b> will output 
+the total number of matching substrings (count duplicates) to the standard output. The output is the total number, with an ending newline character. 
+<br>
+<br>
+Similarly, <b> rlebwt</b> will output 
+the total number of unique matching records (do not count duplicates) if <code>-r</code> is specified.
+<br>
+<br>
+
+If  <code>-n</code> is specified, using the given record identifier, <b> rlebwt</b>  will output the original record value (text) to the standard output with a '\n' at the end.
+
+<br><br>
+
+For any of the above options, if a match cannot be found, simply output nothing.
+
+<br><br>
+Although you do not need to submit a BWT encoder, it is a part of this assignment that you will implement a simple BWT encoding program based on RLFM (this will help you in understanding the lecture materials and assist in testing your assignment). 
+
+
+<h2>File Extensions and Formats</h2>
+Sample files are provided in <code>~cs9319/a2/</code>. 
+<pre>wagner % pwd
+/import/kamen/1/cs9319/a2
+wagner % ls -l
+total 12088
+-rw-r--r-- 1 cs9319 cs9319  911184 Jun 27 23:12 dblp.b
+-rw-r--r-- 1 cs9319 cs9319  911184 Jun 27 23:12 dblp.bb
+-rw-r--r-- 1 cs9319 cs9319 3132682 Jun 27 23:12 dblp.s
+-r--r--r-- 1 cs9319 cs9319 7289468 Jun 27 23:12 dblp.txt
+-rw-r--r-- 1 cs9319 cs9319    3191 Jun 27 22:40 shopping.b
+-rw-r--r-- 1 cs9319 cs9319    3191 Jun 27 22:40 shopping.bb
+-rw-r--r-- 1 cs9319 cs9319   13700 Jun 27 22:40 shopping.s
+-r--r--r-- 1 cs9319 cs9319   25525 Jun 27 23:15 shopping.txt
+-rw-r--r-- 1 cs9319 cs9319       2 Jun 27 23:11 simple1.b
+-rw-r--r-- 1 cs9319 cs9319       2 Jun 27 23:11 simple1.bb
+-rw-r--r-- 1 cs9319 cs9319      11 Jun 27 23:11 simple1.s
+-r--r--r-- 1 cs9319 cs9319      15 Jun 27 23:11 simple1.txt
+-rw-r--r-- 1 cs9319 cs9319       8 Jun 27 23:11 simple2.b
+-rw-r--r-- 1 cs9319 cs9319       8 Jun 27 23:11 simple2.bb
+-rw-r--r-- 1 cs9319 cs9319      35 Jun 27 23:11 simple2.s
+-r--r--r-- 1 cs9319 cs9319      58 Jun 27 23:11 simple2.txt
+-rw-r--r-- 1 cs9319 cs9319      70 Jun 27 23:11 simple3.b
+-rw-r--r-- 1 cs9319 cs9319      70 Jun 27 23:11 simple3.bb
+-rw-r--r-- 1 cs9319 cs9319     378 Jun 27 23:11 simple3.s
+-r--r--r-- 1 cs9319 cs9319     553 Jun 27 23:11 simple3.txt
+wagner % 
+</pre>
+The file extensions represent their corresponding types:
+<ul>
+<li> FILENAME.txt - the original text file. It is provided for your reference only. It will not be available during auto marking.
+</li><li> FILENAME.s - corresponds to S in the RLFM lecture slides and its original paper. It is the BWT text with the consecutive duplicates removed.
+</li><li> FILENAME.b - corresponds to the bit array B in the RLFM lecture slides and its original paper. It is in binary format, which can be inspected using <code>xxd</code> as shown later. 
+</li><li> FILENAME.bb - corresponds to the bit array B' in the RLFM lecture slides and its original paper. It is in binary format, which can be inspected using <code>xxd</code> as shown later. This file is <b>not provided</b> during auto marking. Your <b> rlebwt</b> will need to generate it.
+</li></ul>
+For the B and B' arrays, after the last bit is written to the file, fill in the gap (if any) of the last byte with bit 1. Check the <code>xxd</code> examples below for details.
+
+<h2>Initialization and External Files</h2>
+Whenever <b> rlebwt</b> is executed using a given file FILENAME, for example:
+<pre>rlebwt -X FILENAME INDEX_FOLDER QUERY_STRING
+</pre>
+where X can be any one of the options (<code>-m, -r, -a, -n</code>), it will take FILENAME.s and FILENAME.b as input; and also check if FILENAME.bb exists. If FILENAME.bb does not exist, it will generate one.
+<br><br>
+After that, it will check if INDEX_FOLDER exists. If not, it will create it as an index folder.  Index files will then be generated inside this index folder accordingly.
+<br><br>
+
+In addition to the B' array, your solution is allowed to write out up to <b>6</b> external index files that are in total no larger than the total size of the
+given, input FILENAME.s file plus 2 x the size of the given FILENAME.b.  If your index files are larger than this limit, you will 
+receive zero points for the tests that involve that given FILENAME.
+You may assume that the index folder (and its index files inside) will not be deleted during all the tests for a given FILENAME,
+and all the INDEX_FOLDER are uniquely and correspondingly named. Therefore, 
+to save time, you only need to generate the index files when their folder does not exist yet. 
+<br><br>
+
+
+<h2>Example</h2>
+Suppose the original file (say dummy.txt) before RLFM is: 
+<pre>[3]Computers in industry[25]Data compression[33]Integration[40]Big data indexing[90]1990-02-19[190]20.55
+</pre>
+
+<br>
+
+Some examples:
+<pre>%wagner&gt; rlebwt -m ~/a2/dummy ~/a2/dummyIndex "in"
+4
+%wagner&gt; rlebwt -r ~/a2/dummy ~/a2/dummyIndex "in"
+2
+%wagner&gt; rlebwt -a ~/a2/dummy ~/a2/dummyIndex "in"
+[3]
+[40]
+%wagner&gt; rlebwt -n ~/a2/dummy ~/a2/dummyIndex "3"
+Computers in industry
+%wagner&gt; 
+</pre>
+In the above example, we assume dummy.s and dummy.b exist in the a2 folder of our home directory.  <b> rlebwt</b> will generate dummy.bb inside a2, and will then create an index folder called dummyIndex (with the index files inside dummyIndex) inside a2 as well.
+<br> <br>
+In the following example, we assume dummy.s and dummy.b exist in the XYZ folder of the account MyAccount. You will check if dummy.bb exists in ~MyAccount/XYZ/.
+If not, your submitted <b> rlebwt</b> will generate dummy.bb in ~MyAccount/XYZ/ (assume you have write permission in that folder).
+
+You will create an index folder called dummy (with the index files inside dummy) at your current directory.
+
+
+<pre>%wagner&gt; rlebwt -m ~MyAccount/XYZ/dummy dummy "in "
+1
+%wagner&gt; rlebwt -r ~MyAccount/XYZ/dummy dummy "in "
+1
+%wagner&gt; 
+%wagner&gt; rlebwt -a ~MyAccount/XYZ/dummy dummy "In"
+[33]
+%wagner&gt; 
+%wagner&gt; rlebwt -m ~MyAccount/XYZ/dummy dummy "9"
+3
+%wagner&gt; rlebwt -r ~MyAccount/XYZ/dummy dummy "9"
+1
+%wagner&gt; rlebwt -a ~MyAccount/XYZ/dummy dummy "9"
+[90]
+%wagner&gt; rlebwt -n ~MyAccount/XYZ/dummy dummy "9"
+%wagner&gt; 
+%wagner&gt; rlebwt -n ~MyAccount/XYZ/dummy dummy "90"
+1990-02-19
+%wagner&gt; rlebwt -n ~MyAccount/XYZ/dummy dummy "25"
+Data compression
+%wagner&gt; 
+</pre>
+Note that it is possible that your submission may be tested with the B' files provided. For example, the RLFM encoded file path could be ~cs9319/a2/simple1 and path to index folder could be ~/a2/myIndex. Since simple1.bb is already there, you do not need to generate the B' file again and just read and use it from ~cs9319/a2/. You will then generate the index folder called myIndex at your own a2 folder.
+<h2>Inspecting the Binary Files</h2>
+You may find the tool <code>xxd</code> useful to inspect the binary files correspond to the B and B' arrays. For example, you may use <code>xxd</code> to inspect the provided sample files:
+<pre>wagner % pwd
+/import/kamen/1/cs9319/a2
+wagner % 
+wagner % xxd -b simple1.b
+0000000: 10111111 11101001                                      ..
+wagner % xxd -b simple1.bb
+0000000: 11101011 00111111                                      .?
+wagner % cat simple1.s 
+[an12nbnb]awagner % 
+wagner % xxd -b simple2.b
+0000000: 10000110 10111111 11111111 11111001 00000010 00111100  .....&lt;
+0000006: 11100110 10111111                                      ..
+wagner % xxd -b simple2.bb
+0000000: 11011111 11100001 01000000 11100101 10010011 11111111  ..@...
+0000006: 01111100 01111111                                      |.
+wagner % cat simple2.s
+[1[1endgnad1234245ndbnb]ngnabdiaiaiwagner % 
+wagner % 
+</pre>
+In particular, simple1.s has 11 characters. Therefore, there will be 11 ones in the array B that correspond to the 11 characters in simple1.s. Since all the zeros representing the duplicates of these 11 characters, you can observe that the last bit "1" is just a gap filler. This also means the original text file will contain 15 characters.
+
+<br><br>
+
+<h2>Compiling Your Submission</h2>
+We will use the <code>make</code> command below to compile your solution.  Please provide a makefile and
+ensure that the code you 
+submit can be compiled on a CSE Linux machine, e.g., wagner.  Solutions that have compilation errors will receive zero points 
+for the entire assignment.
+<pre>    make
+</pre>
+Your solution 
+should <b>not</b> write out any external files other than the B' file and the index folder with maximum six files inside.  
+Any solution that writes out external 
+files other than these files will receive zero points for the entire assignment.
+
+
+
+
+<h2>Performance</h2>
+Your solution will be marked based on space and runtime performance. Your soluton will not 
+be tested against any RLFM encoded files with their original files that are larger than 160MB.  
+<br><br>
+Runtime memory is assumed to be always less than <b>16MB</b>.
+Runtime memory consumption will be measured by <code>valgrind massif</code> with the option 
+<code>--pages-as-heap=yes</code>, i.e., all the memory used by your program will be measured. 
+Any solution that violates this memory requirement will receive zero points for that query test. To help you started, your tutor will provide an overview on <code>valgrind</code> and makefile during the tutorial in week 5 or week 6.
+<br>
+<br>
+
+Any solution that runs for more than <b>90 seconds</b> on a machine with similar specification 
+as <i>wagner</i> for the first query on a given RLFM file will be killed, and will receive zero points for the queries for that RLFM file.  
+After that any solution that runs for more than <b>20 seconds</b> for any one of the subsequent queries on that RLFM file will be killed, 
+and will receive zero points for that query test. We will use the <code>time</code> command and count both the user and system time
+as runtime measurement.
+
+<h2>Documentation and Code Inspection</h2>
+Your source code will be inspected. Marks may be deducted if your code is very poor on readability and ease of understanding; your code does not follow the requirements of this specification document; or your code is written deliberately to avoid being accurately measured by <code>valgrind</code>.
+
+<h2>Assumptions/clarifications</h2>
+<ol>
+
+<li>To avoid large runtime memory for sorting, none of the testcases for marking will result in more than 5,000 record matches.
+
+</li><li>The input filename is a path to the given RLFM encoded file (without its extension .s and .b). Please open these files as read-only in case you do not have the write permission for these files.
+
+</li><li>Marks will be deducted for output of any extra text, other than the required, correct answers (in the right order). 
+This extra information includes (but not limited to) debugging messages, line numbers and so on.
+
+</li><li>You can assume that the input query string will not be an empty 
+string (i.e., ""). Furthermore, except with the command argument <code>-n</code>, search terms containing only numbers shall not match any record identifiers. Finally, search terms containing any square bracket will not be tested.
+
+</li><li>You may assume that offset &gt;= 0 and will fit in an <code>unsigned int</code>. 
+
+</li><li>When counting the number of substring matches (i.e., with -m option), to make it easier for backward search matching, all combinations of matches should be counted. E.g., There are 2 matches of "aa" on the record value "aaa"; 2 matches of "ana" on "banana".
+
+</li><li>You are allowed to use up to 6 external index files to enhance the performance of your solution. However, if you believe that your solution is fast enough without using index files, you do not have to generate these files. Even in such case, your solution should still accept a path to index folder as one of the input argument as specified.
+
+</li><li>A record will not be unreasonably long, e.g., you will not see a line that is 5,000+ chars long.
+
+</li><li>Empty records may exist in the original files (before RLFM). However, these records will never be matched during searching because the empty string will not be used as a search term when testing your program.
+</li></ol>
+
+
+<h2>Marking</h2>
+This assignment is worth 100 points.  Below is an indicative marking proportion for large vs small files. You may want to ensure your assignment working properly for small files before enhance it for larger files.
+<center>
+<table border="1">
+<tbody><tr><th>Test Files</th><th>Points</th></tr>
+<tr>
+    <td>TXT size &lt;= 8MB</td>
+    <td>60</td>
+</tr>
+<tr>
+    <td>TXT size &gt; 8MB</td>
+    <td>40</td>
+</tr>
+</tbody></table>
+</center>
+
+<h2>Bonus</h2>
+Bonus marks (up to 10 points) will be awarded for the solution that achieves 100 points and runs the fastest overall (i.e., the shortest total time to finish <b>all</b> the tests). 
+Note: regardless of the bonus marks you receive in this assignment, the maximum final mark for the subject is capped at 100.
+
+<h2>Submission</h2>
+<b>Deadline: Monday 5th August 12:00 (noon)</b>. Late submissions will have marks deducted from the maximum achievable mark at the rate of roughly 1% of the total mark per hour that they are late (i.e., 24% per day), and no submissions will be accepted after 3 days late.
+<br>
+<br>
+
+Use the give command below to submit 
+the assignment or submit via WebCMS3:
+<pre>    give cs9319 a2 makefile *.h *.c *.cpp 
+</pre>
+Please use "classrun" to check your submission to make sure that you have submitted all the necessary files.
+
+<h2>Plagiarism</h2>
+The work you submit must be your own work. Submission of work partially or completely derived 
+from any other person or jointly written with any other person is not permitted. The penalties 
+for such an offence may include negative marks, automatic failure of the course and possibly 
+other academic discipline. Assignment submissions will be examined both automatically and 
+manually for such submissions.
+<br><br>
+Relevant scholarship authorities will be informed if students holding scholarships are 
+involved in an incident of plagiarism or other misconduct.
+<br><br>
+Do not provide or show your assignment work to any other person - apart from the teaching 
+staff of this subject. If you knowingly provide or show your assignment work to another 
+person for any reason, and work derived from it is submitted you may be penalized, even 
+if the work was submitted without your knowledge or consent. This may apply even if your 
+work is submitted by a third party unknown to you.
+<br><br>
+
+
+</body></html>
