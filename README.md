@@ -1,5 +1,6 @@
 #Assignment Spec Analysis
 --------------------------------------------------------------------------------------------------------------------
+
 Task: 
 create a search program that implements BWT backward search, which can efficiently search a RLFM encoded record file
 --------------------------------------------------------------------------------------------------------------------
@@ -38,6 +39,7 @@ Initialization and External Files:
     rlebwt -X FILENAME INDEX_FOLDER QUERY_STRING
     where X can be any one of the options (-m, -r, -a, -n), it will take FILENAME.s and FILENAME.b as input; and also check if FILENAME.bb exists. If FILENAME.bb does not exist, it will generate one. 
     After that, it will check if INDEX_FOLDER exists. If not, it will create it as an index folder. Index files will then be generated inside this index folder accordingly.
+
 
 In addition to the B' array, your solution is allowed to write out up to 6 external index files that are in total no larger than the total size of the given, input FILENAME.s file plus 2 x the size of the given FILENAME.b. If your index files are larger than this limit, you will receive zero points for the tests that involve that given FILENAME. You may assume that the index folder (and its index files inside) will not be deleted during all the tests for a given FILENAME, and all the INDEX_FOLDER are uniquely and correspondingly named. Therefore, to save time, you only need to generate the index files when their folder does not exist yet.
 --------------------------------------------------------------------------------------------------------------------
