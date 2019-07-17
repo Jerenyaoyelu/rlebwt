@@ -12,11 +12,13 @@ void CsTable(char *file){//file is command argument
     }
     fclose(fp);
     int sum = 0;
-    fp = fopen("cs.idx","a+");
+    fp = fopen("cs.idx","wb");
     for(int i = 0;i<256;i++){
         if(temp[i]>0){
-            fputc(i,fp);
-            fputc(sum,fp);
+            fwrite(&i,sizeof(i),1,fp);
+            //when sum excceeds 256, how to write it into files??
+            //solved by using fwrite instead of fputc
+            fwrite(&sum,sizeof(i),1,fp);
             sum += temp[i];
         }
     }
@@ -33,19 +35,24 @@ int Search_m(char *file,char *cs, char *pattern){
     int cst[256] = {0};
     //read cs table
     FILE *fp = fopen(cs,"rb");
-    int temp = fgetc(fp);
+    int tmp = 0;
     int identifier = 0;//0 stands for symbol, 1 stands for #lessthan
     int symbol = -1;
-    while(temp!=EOF){
+    while(fread(&tmp,sizeof(tmp),1,fp)){
         if(identifier ==1){
-            cst[symbol] = temp;
+            cst[symbol] = tmp;
             identifier = 0;
         }else{
-            symbol = temp;
+            symbol = tmp;
             identifier = 1;
         }
-        temp = fgetc(fp);
     }
+    //display cs table for debugging
+    // for(int i= 0;i<256; i++){
+    //     if(cst[i]>0){
+    //         printf("%c %d\n",i,cst[i]);
+    //     }
+    // }
     fclose(fp);
     for(int i=len-1;i>-1;i--){
         if(i == len-1){
