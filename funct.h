@@ -17,6 +17,10 @@ int rank(char target, char *file,char *extsn, int position){
     //rank in s file
     if(extsn[1]=='s'){
         char c = fgetc(fp);
+        //when position smaller than 0, 
+        //then this function can achievev the purpose of tackling the problem of counting occurrence of first symbol
+        //when doing backward search
+        //because this will block the "if break" control flow
         while(c!=EOF){
             position--;
             if (c == target){
