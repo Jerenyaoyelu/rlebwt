@@ -1,57 +1,7 @@
 #include<stdio.h>
-#include<string.h>
 
-// get n continuous bits from source starting at the offset bit
-// (source >> offset) & ((1 << n) - 1) 
-// offset 0 is the rightmost bit
-int getBit(int num,int pos){
-    return (num>>pos)&((1<<1)-1);
-}
-void removeExt(char *filename,int num){
-    int len =strlen(filename);
-    filename[len-num] = '\0';
-}
-int rank(char target, char *file,char *extsn, int position){
-    int count = 0;
-    FILE *fp = fopen(strcat(file,extsn),"r");
-    removeExt(file,2);
-    //rank in s file
-    if(extsn[1]=='s'){
-        char c = fgetc(fp);
-        while(c!=EOF){
-            position--;
-            if (c == target){
-                count++;
-            };
-            if(position == 0){
-                break;
-            }
-            c = fgetc(fp);
-        }
-    }else{//rank in b/bb file
-        int bitBlock = fgetc(fp);
-        while(bitBlock!=EOF){
-            for(int i = 7;i>-1;i--){
-                if(position == 0){
-                    break;
-                }
-                position--;
-                if (getBit(bitBlock,i) == (int)target){
-                    count++;
-                };
-            }
-            if(position == 0){
-                break;
-            }
-            bitBlock = fgetc(fp);
-        }
-    }
-    fclose(fp);
-    return count;
-}
-// int select(char target,char* file, int count){
-//     return 0;
-// };
+#include "funct.h"
+
 void CsTable(char *file){//file is command argument
     FILE *fp = fopen(strcat(file,".s"),"r");
     char s = fgetc(fp);
@@ -96,7 +46,8 @@ int main(int argc, char* argv[]){
         //     }
         //     fclose(fp);
         // }
-        printf("count %d\n",rank('b',argv[2],".s",11));
+        printf("count %d\n",rank(1,argv[2],".bb",11));
+        printf("index %d\n",select(1,argv[2],".bb",7));
     }
     return 0;
 }
