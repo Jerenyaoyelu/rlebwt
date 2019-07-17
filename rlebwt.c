@@ -11,14 +11,23 @@ void removeExt(char *filename,int num){
     int len =strlen(filename);
     filename[len-num] = '\0';
 }
-
 int rank(char target, char *file,char *extsn, int position){
     int count = 0;
     FILE *fp = fopen(strcat(file,extsn),"r");
     removeExt(file,2);
     //rank in s file
     if(extsn[1]=='s'){
-        count = 0;
+        char c = fgetc(fp);
+        while(c!=EOF){
+            position--;
+            if (c == target){
+                count++;
+            };
+            if(position == 0){
+                break;
+            }
+            c = fgetc(fp);
+        }
     }else{//rank in b/bb file
         int bitBlock = fgetc(fp);
         while(bitBlock!=EOF){
@@ -87,7 +96,7 @@ int main(int argc, char* argv[]){
         //     }
         //     fclose(fp);
         // }
-        printf("count %d\n",rank(1,argv[2],".b",15));
+        printf("count %d\n",rank('b',argv[2],".s",11));
     }
     return 0;
 }
