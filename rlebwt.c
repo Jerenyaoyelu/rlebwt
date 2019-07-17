@@ -4,11 +4,10 @@
 
 void CsTable(char *file){//file is command argument
     FILE *fp = fopen(strcat(file,".s"),"r");
-    char s = fgetc(fp);
+    char s = '\0';
     int temp[256]={0};
-    while(s!=EOF){
+    while(fread(&s,sizeof(s),1,fp)){
         temp[(int)s] ++;
-        s = fgetc(fp);
     }
     fclose(fp);
     int sum = 0;
@@ -24,10 +23,6 @@ void CsTable(char *file){//file is command argument
     }
     fclose(fp);
 }
-// void OccTable(char *file){
-//     FILE *fp = fopen(strcat(file,".s"),"r");
-
-// }
 int Search_m(char *file,char *cs, char *pattern){
     int len = strlen(pattern);
     int fr = -1,ls = -1;

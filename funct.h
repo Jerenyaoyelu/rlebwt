@@ -16,12 +16,12 @@ int rank(char target, char *file,char *extsn, int position){
     removeExt(file,strlen(extsn));
     //rank in s file
     if(extsn[1]=='s'){
-        char c = fgetc(fp);
+        char c = '\0';
         //when position smaller than 0, 
         //then this function can achievev the purpose of tackling the problem of counting occurrence of first symbol
         //when doing backward search
         //because this will block the "if break" control flow
-        while(c!=EOF){
+        while(fread(&c,sizeof(c),1,fp)){
             position--;
             if (c == target){
                 count++;
@@ -29,9 +29,10 @@ int rank(char target, char *file,char *extsn, int position){
             if(position == 0){
                 break;
             }
-            c = fgetc(fp);
         }
     }else{//rank in b/bb file
+        //if using fread, will get wrong answer, probably it is because the binary is read chunk by chunk, 
+        //which is easliy to count wrong?
         int bitBlock = fgetc(fp);
         while(bitBlock!=EOF){
             for(int i = 7;i>-1;i--){
