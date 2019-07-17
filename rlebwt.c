@@ -11,6 +11,7 @@ void removeExt(char *filename,int num){
     int len =strlen(filename);
     filename[len-num] = '\0';
 }
+
 int rank(char target, char *file,char *extsn, int position){
     int count = 0;
     FILE *fp = fopen(strcat(file,extsn),"r");
