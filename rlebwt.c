@@ -4,6 +4,7 @@
 
 void CsTable(char *file){//file is command argument
     FILE *fp = fopen(strcat(file,".s"),"r");
+    removeExt(file,2);
     char s = '\0';
     int temp[256]={0};
     while(fread(&s,sizeof(s),1,fp)){
@@ -22,6 +23,64 @@ void CsTable(char *file){//file is command argument
         }
     }
     fclose(fp);
+}
+//check if bb file exists, if not, then generate one, otherwise, do nothing
+//idea1:(not working)
+//1. initialize bb with all 1s with same size of b
+//2. try to find the corresponding index in bb of all the 0s in b, and replace those 1s with 0s in bb
+    //2.1 read s into an array ss
+    //2.2 generate an occurrence table occs recording all the number of occurrence of each symbol in cs
+    //2.3 then, index = occs[ss[rank1(b,i)]]+1+i-select1(b,rank1(b,i))
+//3. i is the index of a 0 in b
+//idea2:
+//1.construct an array similar to c table bbc
+//2.read b and stops when encounter a 0
+//3.get corresponding symbol,
+    //3.1read its value from the array, convert to binary
+    //3.2 concat this and the bit chunk so far 
+    //3.4 store the new bit chunk in decimal in the array
+//4.repeat this until b is exhausted
+//5.loop throgh the array, construct bb
+void Check_bb(char *file,char *cs){
+    FILE *fp1,*fp2,*fp3;
+    if(!(fp1 = fopen(strcat(file,".bbb"),"rd"))){
+        removeExt(file,4);
+        // fp2 = fopen(strcat(file,".s"),"r");
+        // removeExt(file,2);
+        // char s = '\0';
+        // int occs[256]={0};
+        // while(fread(&s,sizeof(s),1,fp2)){
+        //     occs[(int)s]++;
+        // }
+        // fclose(fp2);
+        //create bb
+        // fp1 = fopen(strcat(file,".bb"),"wb");
+        fp3 = fopen(strcat(file,".b"),"rb");
+        removeExt(file,2);
+        int bitBlock = fgetc(fp3);
+        int block = 0;//indicates the i-th block read
+        int ones = 0;//record the number of 1s read
+        int ind = 0;
+        while(bitBlock!=EOF){
+            for(int i = 7;i>-1;i--){
+                if (getBit(bitBlock,i) == 1){
+                    ones++;
+                };
+                if (getBit(bitBlock,i) == 0){
+                    //correct
+                    printf("index in b %d\n",block*8+(7-i)+1);
+                    //wrong
+                    printf("occ %d\n",occs[getSymbol(file,ones)]);
+                    //
+                    printf("sel %d\n",block*8+(7-i)+1-select(1,file,".b",rank(1,file,".b",block*8+(7-i)+1)));
+                };
+            }
+            bitBlock = fgetc(fp3);
+            block++;
+        }
+        // fclose(fp1);
+        fclose(fp3);
+    }
 }
 int Search_m(char *file,char *cs, char *pattern){
     int len = strlen(pattern);
@@ -42,14 +101,15 @@ int Search_m(char *file,char *cs, char *pattern){
             identifier = 1;
         }
     }
+    fclose(fp);
     //display cs table for debugging
     // for(int i= 0;i<256; i++){
     //     if(cst[i]>0){
     //         printf("%c %d\n",i,cst[i]);
     //     }
     // }
-    fclose(fp);
     for(int i=len-1;i>-1;i--){
+        //remember gap-filler 1s in b and bb, so position has to be positive for rank function in b and bb 
         if(i == len-1){
             fr = select(1,file,".bb",cst[(int)pattern[i]]+1);
             //take negative input as the position argument to get the occurrence of first letter 
@@ -69,8 +129,12 @@ int main(int argc, char* argv[]){
     char *pattern = argv[argc-1];
     if(!strcmp(argv[1],"-m")){
         CsTable(argv[2]);
-        removeExt(argv[2],2);
-        printf("%d\n",Search_m(argv[2],"cs.idx",pattern));
+        int DupMatches = Search_m(argv[2],"cs.idx",pattern);
+        // if(DupMatches>0){
+        //     printf("%d\n",DupMatches);
+        // }
+        Check_bb(argv[2],"cs.idx");
+        // printf("%c\n",getSymbol(argv[2],10));
         // printf("count %d\n",rank('a',argv[2],".s",-1));
         // printf("index %d\n",select(1,argv[2],".bb",7));
     }
