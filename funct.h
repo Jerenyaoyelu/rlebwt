@@ -90,3 +90,19 @@ int select(char target,char* file,char *extsn, int count){
     fclose(fp);
     return index;
 };
+//get symbol from s file
+char getSymbol(char *file, int count){
+    FILE *fp = fopen(strcat(file,".s"),"rb");
+    removeExt(file,2);
+    char c = fgetc(fp);
+    while(c!=EOF){
+        count--;
+        if(count == 0){
+            fclose(fp);
+            return c;
+        }
+        c = fgetc(fp);
+    }
+    fclose(fp);
+    return '\0';
+}
