@@ -1,4 +1,7 @@
 #include<stdio.h>
+#include<stdlib.h>
+#include<string.h>
+#include<math.h>
 
 #include "funct.h"
 
@@ -32,13 +35,14 @@ void CsTable(char *file){//file is command argument
     //2.2 generate an occurrence table occs recording all the number of occurrence of each symbol in cs
     //2.3 then, index = occs[ss[rank1(b,i)]]+1+i-select1(b,rank1(b,i))
 //3. i is the index of a 0 in b
-//idea2:
+//idea2:(may be to slow)
 //1.construct an array similar to c table bbc
 //2.read b and stops when encounter a 0
 //3.get corresponding symbol,
-    //3.1read its value from the array, convert to binary
-    //3.2 concat this and the bit chunk so far 
-    //3.4 store the new bit chunk in decimal in the array
+    //3.1 read its value from the array(its binary but presented as integer e.g. 111011)
+    //3.2 plus this and the bit chunk(int) so far 
+    //3.4 store the new bit chunk (int) in the array
+    //problem:fails when text is large, because upper limit of (int)binary is 111111111
 //4.repeat this until b is exhausted
 //5.loop throgh the array, construct bb
 void Check_bb(char *file,char *cs){
@@ -58,28 +62,46 @@ void Check_bb(char *file,char *cs){
         fp3 = fopen(strcat(file,".b"),"rb");
         removeExt(file,2);
         int bitBlock = fgetc(fp3);
-        int block = 0;//indicates the i-th block read
+        int block = 0;//indicates the block read
+        int bit = 0;
+        int len = 0;
         int ones = 0;//record the number of 1s read
-        int ind = 0;
+        int bbc[256] = {0};
         while(bitBlock!=EOF){
             for(int i = 7;i>-1;i--){
-                if (getBit(bitBlock,i) == 1){
+                bit = getBit(bitBlock,i);
+                if (bit == 1){
                     ones++;
-                };
-                if (getBit(bitBlock,i) == 0){
+                    //store the new bit block in integer
+                    //upper limit is 111111111
+                    //simple3 will exceed the limit
+                    if(block>0){
+                        char tmp = getSymbol(file,ones-1);
+                        bbc[(int)tmp]=bbc[(int)tmp]*(int)pow((double)10,(double)(floor(log10(abs(block)))+1))+block;
+                        //empty the block
+                        block=0;
+                        len=0;
+                    }
+                    block=block*10+bit;
+                }else{
+                    block=block*10+bit;
                     //correct
-                    printf("index in b %d\n",block*8+(7-i)+1);
-                    //wrong
-                    printf("occ %d\n",occs[getSymbol(file,ones)]);
-                    //
-                    printf("sel %d\n",block*8+(7-i)+1-select(1,file,".b",rank(1,file,".b",block*8+(7-i)+1)));
-                };
+                    // printf("index in b %d\n",block*8+(7-i)+1);
+                    // //wrong
+                    // printf("occ %d\n",occs[getSymbol(file,ones)]);
+                    // //
+                    // printf("sel %d\n",block*8+(7-i)+1-select(1,file,".b",rank(1,file,".b",block*8+(7-i)+1)));
+                }
             }
             bitBlock = fgetc(fp3);
-            block++;
         }
         // fclose(fp1);
         fclose(fp3);
+        for(int i=0;i<256;i++){
+            if(bbc[i]>0){
+                printf("%c %d\n",i,bbc[i]);
+            }
+        }
     }
 }
 int Search_m(char *file,char *cs, char *pattern){
