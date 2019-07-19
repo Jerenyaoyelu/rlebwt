@@ -106,3 +106,28 @@ char getSymbol(char *file, int count){
     fclose(fp);
     return '\0';
 }
+//input a index and its symbol, output the number of rows before in F table
+//consists of two parts:
+    //1. all symbols smaller that it
+    //2. all symbols same as it but before idx in s
+int RowsBef(char *file,int index, char syb){
+    FILE *fp1;
+    fp1 = fopen(strcat(file,".s"),"rb");
+    removeExt(file,2);
+    char c = fgetc(fp1);
+    int idx = 0;
+    int sum = 0;
+    while(c!=EOF){
+        idx++;
+        index--;
+        if((int)c<(int)syb){
+            sum += select(1,file,".b",idx+1)-select(1,file,".b",idx);
+        }
+        if((int)c == (int)syb && index>0){
+            sum += select(1,file,".b",idx+1)-select(1,file,".b",idx);
+        }
+        c = fgetc(fp1);
+    }
+    fclose(fp1);
+    return sum;
+}
