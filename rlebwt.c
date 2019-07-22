@@ -32,22 +32,6 @@ void CsTable(char *file){//file is command argument
     }
     fclose(fp);
 }
-// int *RowsTable(char *file){
-//     FILE *fp;
-//     fp = fopen(strcat(file,".s"),"rb");
-//     removeExt(file,2);
-//     int i = 1;
-//     int *rt = (int*)malloc(1024*sizeof(int));
-//     char s = fgetc(fp);
-//     while(s != EOF){
-//         rt[i] = RowsBef(file,i,s);
-//         s = fgetc(fp);
-//         i++;
-//     }
-//     rt[0] = i-1;
-//     fclose(fp);
-//     return rt;
-// }
 //check if bb file exists, if not, then generate one, otherwise, do nothing
 //modified idea1:(works, but fail in shopping(too slow))
 //1. initialize bb with all 1s with same size of b
@@ -63,7 +47,7 @@ void CsTable(char *file){//file is command argument
 //so the corresponding index in bb of 0s in b is sum(cj,ck,....,cz)+i-select1(b,rank1(b,i))+1
 void Check_bb(char *file){
     FILE *fp1,*fp3;
-    char extn[] = ".bbb";
+    char extn[] = ".bb";
     fp1 = fopen(strcat(file,extn),"rb");
     removeExt(file,strlen(extn));
     if(fp1 == NULL){
@@ -72,7 +56,7 @@ void Check_bb(char *file){
         fp1 = fopen(strcat(file,".b"),"rb");
         removeExt(file,2);
         int bitB = fgetc(fp1);
-        int *bb = (int*)malloc(1024*sizeof(int));
+        int *bb = (int*)malloc(2250000*sizeof(int));
         int j = 0;
         while(bitB != EOF){
             bb[j] = 255;
@@ -80,9 +64,6 @@ void Check_bb(char *file){
             bitB = fgetc(fp1);
         }
         fclose(fp1);
-        //pre compute Rowsbefore Table
-        //same, still two slow in shopping
-        // int *p = RowsTable(file);
         //change 0s
         fp3 = fopen(strcat(file,".b"),"rb");
         removeExt(file,2);
@@ -93,6 +74,7 @@ void Check_bb(char *file){
         while(bitBlock!=EOF){
             for(int i = 7;i>-1;i--){
                 bit = getBit(bitBlock,i);
+                //reduction of the time of reading files may be an approach to improve
                 if(bit == 0){
                     //get index in s
                     int idx = rank(1,file,".b",block*8+(7-i)+1);
@@ -100,8 +82,6 @@ void Check_bb(char *file){
                     syb = getSymbol(file,idx);
                     //get place of 0s in bb
                     int place = block*8+(7-i)+1-select(1,file,".b",idx)+RowsBef(file,idx,syb)+1;
-                    // int place = block*8+(7-i)+1-select(1,file,".b",idx)+p[idx]+1;
-                    // printf("%d %d\n",block*8+(7-i)+1,place);
                     //change the specific bit into 0
                     //to change the 1st bit from right hand side, need 1<<0; 1<<8 will do nothing
                     if(place % 8 == 0){
@@ -117,87 +97,13 @@ void Check_bb(char *file){
         fclose(fp3);
         fp1 = fopen(strcat(file,extn),"wb");
         removeExt(file,strlen(extn));
-        //because of the way to implementat getSymbol, bbc[0] is the # of gap-filler 1s
         for(int k =0;k<j;k++){
             fputc(bb[k],fp1);
         }
         fclose(fp1);
         free(bb);
-        // free(p);
     }
-    fclose(fp1);
 }
-//idea2:(works, but fail in dblp(too slow), write will be a big problem!)
-//1.construct an array similar to c table bbc
-//2.read b and stops when encounter a 0
-//3.get corresponding symbol,
-    //3.1 read its value from the array(its binary but presented as integer e.g. 111011)
-    //3.2 plus this and the bit chunk(int) so far 
-    //3.4 store the new bit chunk (int) in the array
-//4.repeat this until b is exhausted
-//5.loop throgh the array, construct bb
-// void Check_bb(char *file){
-//     FILE *fp1,*fp3;
-//     if(!(fp1 = fopen(strcat(file,".bbb"),"rb"))){
-//         fclose(fp1);
-//         removeExt(file,4);
-//         fp3 = fopen(strcat(file,".b"),"rb");
-//         removeExt(file,2);
-//         int bitBlock = fgetc(fp3);
-//         int block=0;//record the block read
-//         int bit = 0;
-//         int len = 0;
-//         int ones = 0;//record the number of 1s read
-//         int bbc[256] = {0};
-//         int totlBits = 0;
-//         //problem: cannot distinguish the gap-filler 1s
-//         //last 1(gap-filler or not) in b is still in block
-//         while(bitBlock!=EOF){
-//             for(int i = 7;i>-1;i--){
-//                 totlBits++;
-//                 bit = getBit(bitBlock,i);
-//                 if (bit == 1){
-//                     //store the new bit block in integer
-//                     //upper limit is 111111111
-//                     //simple3 will exceed the limit
-//                     if(block>0){
-//                         char tmp = getSymbol(file,ones);
-//                         // bbc[(int)tmp]=bbc[(int)tmp]*(int)pow((double)10,(double)(floor(log10(abs(block)))+1))+block;
-//                         bbc[(int)tmp]=bbc[(int)tmp]*(int)pow((double)2,(double)len)+block;
-//                         //empty the block
-//                         block = 0;
-//                         totlBits -= len;
-//                         len = 0;
-//                         // printf("\n");
-//                     }
-//                     block = block*2+bit;
-//                     len++;
-//                     // printf("%d",bit);
-//                     ones++;
-//                 }else{
-//                     block = block*2+bit;
-//                     len++;
-//                     // printf("%d",bit);
-//                 }
-//             }
-//             bitBlock = fgetc(fp3);
-//         }
-//         char tmp = getSymbol(file,ones);
-//         bbc[(int)tmp]=bbc[(int)tmp]*(int)pow((double)2,(double)len)+block;
-//         // fclose(fp1);
-//         fclose(fp3);
-//         fp1 = fopen(strcat(file,".bbb"),"wb");
-//         removeExt(file,4);
-//         //because of the way to implementat getSymbol, bbc[0] is the # of gap-filler 1s
-//         for(int i=1;i<256;i++){
-//             if(bbc[i]>0){
-//                 fwrite(&bbc[i],sizeof(i),1,fp1);
-//             }
-//         }
-//         fwrite(&bbc[0],sizeof(int),1,fp1);
-//         fclose(fp1);
-//     }
-// }
 int *Search_m(char *file,char *cs, char *pattern){
     int *res = (int*)malloc(2*sizeof(int));
     int len = strlen(pattern);
@@ -227,7 +133,11 @@ int *Search_m(char *file,char *cs, char *pattern){
             //when doing backward search
             ls = select(1,file,".bb",cst[(int)pattern[i]]+1+rank(pattern[i],file,".s",-1))-1;
         }else{
-            fr = select(1,file,".bb",cst[(int)pattern[i]]+1+rank(pattern[i],file,".s",rank(1,file,".b",fr-1)));
+            //cs to get # of 1s before
+            //rank to get the # of occ of current symbol up to the cloest 1
+            //fr-select(1,file,".b",rank(1,file,".b",fr)) to get the i-th current symbol if it is 0 in b
+            int cloest_one = select(1,file,".b",rank(1,file,".b",fr));
+            fr = select(1,file,".bb",cst[(int)pattern[i]]+1+rank(pattern[i],file,".s",rank(1,file,".b",cloest_one-1)))+(fr-cloest_one);
             ls = select(1,file,".bb",cst[(int)pattern[i]]+1+rank(pattern[i],file,".s",rank(1,file,".b",ls)))-1;
         }
     }
