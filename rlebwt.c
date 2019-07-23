@@ -145,10 +145,51 @@ int *Search_m(char *file,char *cs, char *pattern){
     res[1]=ls;
     return res;
 }
-
-// char *Search_r(char *file,int *startingPosi){
-
-// }
+int LF(char * file, int n, char symb,int *cs){
+    int tmp = rank(1,file,".b",n);
+    return select(1,file,".bb",cs[(int)symb]+ rank(symb,file,".s",tmp)) + n - select(1,file,".b",tmp);
+}
+void Search_ra(char *file,int *matches, char *cs){
+    int cst[256] = {0};
+    //read cs table
+    FILE *fp1;
+    fp1 = fopen(cs,"rb");
+    int tmp = 0;
+    int identifier = 0;//0 stands for symbol, 1 stands for #lessthan
+    int symbol = -1;
+    while(fread(&tmp,sizeof(tmp),1,fp1)){
+        if(identifier ==1){
+            cst[symbol] = tmp;
+            identifier = 0;
+        }else{
+            symbol = tmp;
+            identifier = 1;
+        }
+    }
+    fclose(fp1);
+    int *idtf = (int*)malloc(5000*sizeof(int));
+    int count = 0;
+    for(int i = matches[0];i<=matches[1];i++){
+        char sb = getSymbol(file,rank(1,file,".b",i));
+        int Sybfront = i;
+        identifier = 0;
+        char id[30] = {'\0'}; 
+        while(sb != '['){
+            Sybfront = LF(file,Sybfront,sb,cst);
+            if(sb == ']'){identifier = 1;}
+            if(identifier == 1 && sb != ']'){
+                id[strlen(id)] = sb;
+                identifier = 0;
+            }
+            sb = getSymbol(file,rank(1,file,".b",Sybfront));
+        }
+        idtf[count] = atoi(id);
+        count++;
+    }
+    for(int i = 0;i<count;i++){
+        printf("%d,",idtf[i]);
+    }
+}
 int main(int argc, char* argv[]){
     // strcpy(filepath,argv[2]);
     FILE *fp;
@@ -156,14 +197,15 @@ int main(int argc, char* argv[]){
     char *pattern = argv[argc-1];
     if(!strcmp(argv[1],"-m")){
         CsTable(argv[2]);
-        Check_bb(argv[2]);
-        int *DupMatches = Search_m(argv[2],"cs.idx",pattern);
-        if(DupMatches[1]- DupMatches[0]+1>0){
-            printf("%d\n",DupMatches[1]-DupMatches[0]+1);
-        }
+        // Check_bb(argv[2]);
+        // int *DupMatches = Search_m(argv[2],"cs.idx",pattern);
+        // if(DupMatches[1]- DupMatches[0]+1>0){
+        //     printf("%d\n",DupMatches[1]-DupMatches[0]+1);
+        // }
+        // Search_ra(argv[2],DupMatches,"cs.idx");
         // printf("%c\n",getSymbol(argv[2],10));
-        // printf("count %d\n",rank('a',argv[2],".s",-1));
-        // printf("index %d\n",select(1,argv[2],".bb",7));
+        printf("count %u\n",rank(1,argv[2],".b",13));
+        printf("index %u\n",select(1,argv[2],".b",11));
     }
     return 0;
 }
