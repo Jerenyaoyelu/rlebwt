@@ -17,13 +17,13 @@ int rank(char target, char *file,char *extsn, int position){
     removeExt(file,strlen(extsn));
     //rank in s file
     if(extsn[1]=='s'){
-        char c[400];
+        unsigned char *c = (unsigned char*)malloc(8000000*sizeof(unsigned char));
         //when position smaller than 0, 
         //then this function can achievev the purpose of tackling the problem of counting occurrence of first symbol
         //when doing backward search
         //because this will block the "if break" control flow
-        while(fread(&c,sizeof(char),400,fp)){
-            for(int i = 0;i<400;i++){
+        while(fread(c,sizeof(unsigned char),8000000,fp)){
+            for(int i = 0;i<ftell(fp);i++){
                 position--;
                 if (c[i] == target){
                     count++;
@@ -36,17 +36,18 @@ int rank(char target, char *file,char *extsn, int position){
                 break;
             }
         }
+        free(c);
     }else{//rank in b/bb file
-        unsigned int bitBlock[100];
+        unsigned int *bitBlock = (unsigned int*)malloc(2000000*sizeof(unsigned int));
         int read_size = sizeof(unsigned int);
         int len_read = 1;//when file is smaller than 4 bytes, this will record the number of bytes read
-        if(fread(bitBlock,read_size,100,fp)==0){
+        if(fread(bitBlock,read_size,2000000,fp)==0){
             len_read = ftell(fp);
             read_size = 1;
         }
         fseek( fp, 0, SEEK_SET );
-        while(fread(bitBlock,read_size,100,fp)){
-            for(int i = 0;i<100;i++){
+        while(fread(bitBlock,read_size,2000000,fp)){
+            for(int i = 0;i<ftell(fp);i++){
                 for(int j = 0; j <read_size*8*len_read;j++){
                     position--;
                     if (getBit(bitBlock[i],j) == (int)target){
@@ -64,6 +65,7 @@ int rank(char target, char *file,char *extsn, int position){
                 break;
             }
         }
+        free(bitBlock);
     }
     fclose(fp);
     return count;
@@ -73,9 +75,9 @@ unsigned int select(char target,char* file,char *extsn, int count){
     FILE *fp = fopen(strcat(file,extsn),"r");
     removeExt(file,strlen(extsn));
     if(extsn[1]=='s'){
-        char c[400];
-        while(fread(&c,sizeof(char),400,fp)){
-            for(int i = 0;i<400;i++){
+        unsigned char *c = (unsigned char*)malloc(8000000*sizeof(unsigned char));
+        while(fread(c,sizeof(char),8000000,fp)){
+            for(int i = 0;i<ftell(fp);i++){
                 if (c[i] == target){
                     count--;
                 };
@@ -88,18 +90,19 @@ unsigned int select(char target,char* file,char *extsn, int count){
                 break;
             }
         }
+        free(c);
     }else{//rank in b/bb file
-        unsigned int bitBlock[100];
+        unsigned int *bitBlock = (unsigned int*)malloc(2000000*sizeof(unsigned int));
         int read_size = sizeof(unsigned int);
         int len_read = 1;//when file is smaller than 4 bytes, this will record the number of bytes read
         // printf("%ld\n", ftell(fp)); //tell the position of file pointer 
-        if(fread(bitBlock,read_size,100,fp)==0){
+        if(fread(bitBlock,read_size,2000000,fp)==0){
             len_read = ftell(fp);
             read_size = 1;
         }
         fseek( fp, 0, SEEK_SET );
-        while(fread(bitBlock,read_size,100,fp)){
-            for(int i = 0;i<100;i++){
+        while(fread(bitBlock,read_size,2000000,fp)){
+            for(int i = 0;i<ftell(fp);i++){
                 if(count == 0){
                     break;
                 }
@@ -117,6 +120,7 @@ unsigned int select(char target,char* file,char *extsn, int count){
                 break;
             }
         }
+        free(bitBlock);
     }
     fclose(fp);
     return index;
