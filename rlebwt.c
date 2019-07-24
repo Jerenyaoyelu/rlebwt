@@ -197,15 +197,15 @@ int main(int argc, char* argv[]){
     char *pattern = argv[argc-1];
     if(!strcmp(argv[1],"-m")){
         CsTable(argv[2]);
-        // Check_bb(argv[2]);
-        // int *DupMatches = Search_m(argv[2],"cs.idx",pattern);
-        // if(DupMatches[1]- DupMatches[0]+1>0){
-        //     printf("%d\n",DupMatches[1]-DupMatches[0]+1);
-        // }
+        Check_bb(argv[2]);
+        int *DupMatches = Search_m(argv[2],"cs.idx",pattern);
+        if(DupMatches[1]- DupMatches[0]+1>0){
+            printf("%d\n",DupMatches[1]-DupMatches[0]+1);
+        }
         // Search_ra(argv[2],DupMatches,"cs.idx");
         // printf("%c\n",getSymbol(argv[2],10));
-        printf("count %u\n",rank(1,argv[2],".b",13));
-        printf("index %u\n",select(1,argv[2],".b",11));
+        // printf("count %u\n",rank(1,argv[2],".b",13));
+        // printf("index %u\n",select(1,argv[2],".b",11));
     }
     return 0;
 }
