@@ -139,8 +139,7 @@ void Check_bb(char *file, int fsk_pos){
         free(bitBlock);
     }
 }
-int *Search_m(char *file,char *cs, char *pattern){
-    int *res = (int*)malloc(2*sizeof(int));
+int *Search(char *file,char *cs, char *pattern){
     int len = strlen(pattern);
     int fr = -1,ls = -1;
     char c = pattern[len-1];
@@ -176,35 +175,9 @@ int *Search_m(char *file,char *cs, char *pattern){
             ls = select(1,file,".bb",cst[(int)pattern[i]]+1+rank(pattern[i],file,".s",rank(1,file,".b",ls)))-1;
         }
     }
-    res[0]=fr;
-    res[1]=ls;
-    return res;
-}
-int LF(char * file, int n, char symb,int *cs){
-    int tmp = rank(1,file,".b",n);
-    return select(1,file,".bb",cs[(int)symb]+ rank(symb,file,".s",tmp)) + n - select(1,file,".b",tmp);
-}
-int *Search_ra(char *file,int *matches, char *cs){
-    int cst[256] = {0};
-    //read cs table
-    FILE *fp1;
-    fp1 = fopen(cs,"rb");
-    int tmp = 0;
-    int identifier = 0;//0 stands for symbol, 1 stands for #lessthan
-    int symbol = -1;
-    while(fread(&tmp,sizeof(tmp),1,fp1)){
-        if(identifier ==1){
-            cst[symbol] = tmp;
-            identifier = 0;
-        }else{
-            symbol = tmp;
-            identifier = 1;
-        }
-    }
-    fclose(fp1);
     int *idtf = (int*)malloc(5001*sizeof(int));
     int count = 0;
-    for(int i = matches[0];i<=matches[1];i++){
+    for(int i = fr;i<=ls;i++){
         char sb = getSymbol(file,rank(1,file,".b",i));
         int Sybfront = i;
         identifier = 0;
@@ -219,9 +192,12 @@ int *Search_ra(char *file,int *matches, char *cs){
         }
         //reverse the string
         inplace_reverse(id);
-        idtf[count] = atoi(id);
-        count++;
+        if(atoi(id)>0){
+            idtf[count+1] = atoi(id);
+            count++;
+        }
     }
+    idtf[0] = count;
     return idtf;
 }
 int main(int argc, char* argv[]){
@@ -229,38 +205,31 @@ int main(int argc, char* argv[]){
     FILE *fp;
     int bb;
     char *pattern = argv[argc-1];
+    // printf("%c\n",getSymbol(argv[2],5));
     CsTable(argv[2]);
     // Check_bb(argv[2],0);
-    int *DupMatches = Search_m(argv[2],"cs.idx",pattern);
-    int *idSet = Search_ra(argv[2],DupMatches,"cs.idx");
-    //sort the idSet and count unique identifer and real text matches
-    int MatchedIsID = 0;
-    int *uniqueID = (int*)malloc(5000*sizeof(int));
-    int uniq = 0;
-    qsort(idSet,DupMatches[1]- DupMatches[0]+1,sizeof(int),compare);
-    for(int i = 0; i<DupMatches[1]- DupMatches[0]+1;i++){
-        if(idSet[i] == 0){
-            MatchedIsID++;
-        }else{
-            if(uniq == 0){
-                uniqueID[uniq] = idSet[i];
+    int *DupMatches = Search(argv[2],"cs.idx",pattern);
+    if(!strcmp(argv[1],"-m")){
+        if(DupMatches[0]> 0){
+            printf("%d\n",DupMatches[0]);
+        }
+    }else if(strcmp(argv[1],"-n")){
+        int last_elmt = -1;
+        int uniq = 0;
+        qsort(DupMatches,DupMatches[0],sizeof(int),compare);
+        for(int i = 1; i<DupMatches[0]+1;i++){
+            if(DupMatches[i] != last_elmt){
+                if(!strcmp(argv[1],"-a")){
+                    printf("[%d]\n",DupMatches[i]);
+                }
                 uniq++;
-            }else if(idSet[i] != uniqueID[uniq-1]){
-                uniqueID[uniq] = idSet[i];
-                uniq++;
+                last_elmt = DupMatches[i];
             }
         }
-    }
-    if(!strcmp(argv[1],"-m")){
-        if(DupMatches[1]- DupMatches[0]+1 - MatchedIsID > 0){
-            printf("%d\n",DupMatches[1]- DupMatches[0]+1 - MatchedIsID);
-        }
-    }else if(!strcmp(argv[1],"-r")){
-        printf("%d\n",uniq);
-    }else if(!strcmp(argv[1],"-a")){
-        for(int i = 0; i<uniq;i++){
-            printf("[%d]\n",uniqueID[i]);
+        if(!strcmp(argv[1],"-r")){
+            printf("%d\n",uniq);
         }
     }
+    free(DupMatches);
     return 0;
 }
