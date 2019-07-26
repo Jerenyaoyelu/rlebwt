@@ -45,9 +45,9 @@ void CsTable(char *file){//file is command argument
         //2.4.3 get all this counts, cj,ck,....,cz
     //2.5 get the distance bewteen i and the closest 1, i-select1(b,rank1(b,i))
 //so the corresponding index in bb of 0s in b is sum(cj,ck,....,cz)+i-select1(b,rank1(b,i))+1
-void Check_bb(char *file){
-    FILE *fp1,*fp3;
-    char extn[] = ".bb";
+void Check_bb(char *file, int fsk_pos){
+    FILE *fp1;
+    char extn[] = ".bbb";
     fp1 = fopen(strcat(file,extn),"rb");
     removeExt(file,strlen(extn));
     if(fp1 == NULL){
@@ -55,53 +55,88 @@ void Check_bb(char *file){
         //init bb
         fp1 = fopen(strcat(file,".b"),"rb");
         removeExt(file,2);
-        int bitB = fgetc(fp1);
-        int *bb = (int*)malloc(2250000*sizeof(int));
-        int j = 0;
-        while(bitB != EOF){
-            bb[j] = 255;
-            j++;
-            bitB = fgetc(fp1);
+        unsigned int *bb=(unsigned int*)malloc(1000000*sizeof(unsigned int));
+        int read_size = sizeof(unsigned int);
+        int len_read = 1;
+        if(fread(bb,read_size,1000000,fp1)==0){
+            len_read = ftell(fp1);
+            read_size = 1;
         }
-        fclose(fp1);
+        fseek( fp1, 0, SEEK_SET );
+        while(fread(bb,read_size,1000000,fp1)){
+            for(int i = 0;i<=ftell(fp1)/4;i++){
+                if(ftell(fp1)-4*i<4){
+                    bb[i] = pow(2,((ftell(fp1)-4*i)*8))-1;
+                }else{
+                    bb[i] = pow(2,32)-1;
+                }
+            }
+        }
+        //what to do with if not reaching the end with 8MB
+        if(ftell(fp1)!=SEEK_END){
+            printf("55\n");
+        }
         //change 0s
-        fp3 = fopen(strcat(file,".b"),"rb");
-        removeExt(file,2);
-        int bitBlock = fgetc(fp3);
+        unsigned int *bitBlock = (unsigned int*)malloc(1000000*sizeof(unsigned int));
+        fseek(fp1,0,SEEK_SET);
         int block=0;//record the block read
         char syb = '\0';
         int bit = 0;
-        while(bitBlock!=EOF){
-            for(int i = 7;i>-1;i--){
-                bit = getBit(bitBlock,i);
-                //reduction of the time of reading files may be an approach to improve
-                if(bit == 0){
-                    //get index in s
-                    int idx = rank(1,file,".b",block*8+(7-i)+1);
-                    //get the symbol
-                    syb = getSymbol(file,idx);
-                    //get place of 0s in bb
-                    int place = block*8+(7-i)+1-select(1,file,".b",idx)+RowsBef(file,idx,syb)+1;
-                    //change the specific bit into 0
-                    //to change the 1st bit from right hand side, need 1<<0; 1<<8 will do nothing
-                    if(place % 8 == 0){
-                        bb[place/8-1] = bb[place/8-1] & ~(1<<(place % 8));
-                    }else{
-                        bb[place/8] = bb[place/8] & ~(1<<(8 - (place % 8)));
+        int bb_size = 0;
+        int write_size = 0;
+        while(fread(bitBlock,read_size,1000000,fp1)){
+            if(ftell(fp1)%4 == 0){
+                bb_size = ftell(fp1)/4;
+                write_size = ftell(fp1)/4;
+            }else{
+                bb_size = ftell(fp1)/4+1;
+                write_size = ftell(fp1);
+            }
+            for(int j = 0; j <bb_size;j++){
+                // printf("j %d\n",j);
+                for(int i = 0;i<read_size*8*len_read;i++){
+                    bit = getBit(bitBlock[j],block*32+i);
+                    // printf("%d %d\n",bit,block*32+i);
+                    //reduction of the time of reading files may be an approach to improve
+                    if(bit == 0){
+                        // get index in s
+                        int idx = rank(1,file,".b",block*32+i+1);
+                        // //get the symbol
+                        syb = getSymbol(file,idx);
+                        // printf("%c %d\n",syb,block*32+i+1);
+                        // //get place of 0s in bb
+                        int place = block*32+i+1-select(1,file,".b",idx)+RowsBef(file,idx,syb)+1;
+                        // printf("%d %d\n",block*32+i+1,place);
+                        // //change the specific bit into 0
+                        // //to change the 1st bit from right hand side, need 1<<0; 1<<8 will do nothing
+                        // bb[place/(read_size*8*len_read)] = bb[place/(read_size*8*len_read)] & ~(1<<((place/8+1)*8-place%8));
+                        if(place % 8 == 0){
+                            bb[place/(read_size*8*len_read)-1] = bb[place/(read_size*8*len_read)-1] & ~(1<<((place/8)*8-(8-place%8)));
+                        }else{
+                            bb[place/(read_size*8*len_read)] = bb[place/(read_size*8*len_read)] & ~(1<<((place/8+1)*8-place%8));
+                        }
                     }
                 }
+                block++;
             }
-            bitBlock = fgetc(fp3);
-            block++;
-        }
-        fclose(fp3);
-        fp1 = fopen(strcat(file,extn),"wb");
-        removeExt(file,strlen(extn));
-        for(int k =0;k<j;k++){
-            fputc(bb[k],fp1);
         }
         fclose(fp1);
+        // printf("%ld\n",ftell(fp1));
+        fp1 = fopen(strcat(file,extn),"wb");
+        // printf("%ld\n",ftell(fp1));
+        removeExt(file,strlen(extn));
+        if(bb_size == write_size){
+            fwrite(bb,read_size,write_size,fp1);
+        }else{
+            fwrite(bb,read_size,bb_size-1,fp1);
+        }
+        
+        // for(int k =0;k<bb_size;k++){
+        //     printf("%d\n",bb[k]);
+        // }
+        fclose(fp1);
         free(bb);
+        free(bitBlock);
     }
 }
 int *Search_m(char *file,char *cs, char *pattern){
@@ -149,7 +184,7 @@ int LF(char * file, int n, char symb,int *cs){
     int tmp = rank(1,file,".b",n);
     return select(1,file,".bb",cs[(int)symb]+ rank(symb,file,".s",tmp)) + n - select(1,file,".b",tmp);
 }
-void Search_ra(char *file,int *matches, char *cs){
+int *Search_ra(char *file,int *matches, char *cs){
     int cst[256] = {0};
     //read cs table
     FILE *fp1;
@@ -167,7 +202,7 @@ void Search_ra(char *file,int *matches, char *cs){
         }
     }
     fclose(fp1);
-    int *idtf = (int*)malloc(5000*sizeof(int));
+    int *idtf = (int*)malloc(5001*sizeof(int));
     int count = 0;
     for(int i = matches[0];i<=matches[1];i++){
         char sb = getSymbol(file,rank(1,file,".b",i));
@@ -179,33 +214,53 @@ void Search_ra(char *file,int *matches, char *cs){
             if(sb == ']'){identifier = 1;}
             if(identifier == 1 && sb != ']'){
                 id[strlen(id)] = sb;
-                identifier = 0;
             }
             sb = getSymbol(file,rank(1,file,".b",Sybfront));
         }
+        //reverse the string
+        inplace_reverse(id);
         idtf[count] = atoi(id);
         count++;
     }
-    for(int i = 0;i<count;i++){
-        printf("%d,",idtf[i]);
-    }
+    return idtf;
 }
 int main(int argc, char* argv[]){
     // strcpy(filepath,argv[2]);
     FILE *fp;
     int bb;
     char *pattern = argv[argc-1];
-    if(!strcmp(argv[1],"-m")){
-        CsTable(argv[2]);
-        Check_bb(argv[2]);
-        int *DupMatches = Search_m(argv[2],"cs.idx",pattern);
-        if(DupMatches[1]- DupMatches[0]+1>0){
-            printf("%d\n",DupMatches[1]-DupMatches[0]+1);
+    CsTable(argv[2]);
+    // Check_bb(argv[2],0);
+    int *DupMatches = Search_m(argv[2],"cs.idx",pattern);
+    int *idSet = Search_ra(argv[2],DupMatches,"cs.idx");
+    //sort the idSet and count unique identifer and real text matches
+    int MatchedIsID = 0;
+    int *uniqueID = (int*)malloc(5000*sizeof(int));
+    int uniq = 0;
+    qsort(idSet,DupMatches[1]- DupMatches[0]+1,sizeof(int),compare);
+    for(int i = 0; i<DupMatches[1]- DupMatches[0]+1;i++){
+        if(idSet[i] == 0){
+            MatchedIsID++;
+        }else{
+            if(uniq == 0){
+                uniqueID[uniq] = idSet[i];
+                uniq++;
+            }else if(idSet[i] != uniqueID[uniq-1]){
+                uniqueID[uniq] = idSet[i];
+                uniq++;
+            }
         }
-        // Search_ra(argv[2],DupMatches,"cs.idx");
-        // printf("%c\n",getSymbol(argv[2],10));
-        // printf("count %u\n",rank(1,argv[2],".b",13));
-        // printf("index %u\n",select(1,argv[2],".b",11));
+    }
+    if(!strcmp(argv[1],"-m")){
+        if(DupMatches[1]- DupMatches[0]+1 - MatchedIsID > 0){
+            printf("%d\n",DupMatches[1]- DupMatches[0]+1 - MatchedIsID);
+        }
+    }else if(!strcmp(argv[1],"-r")){
+        printf("%d\n",uniq);
+    }else if(!strcmp(argv[1],"-a")){
+        for(int i = 0; i<uniq;i++){
+            printf("[%d]\n",uniqueID[i]);
+        }
     }
     return 0;
 }

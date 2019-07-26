@@ -47,7 +47,7 @@ int rank(char target, char *file,char *extsn, int position){
         }
         fseek( fp, 0, SEEK_SET );
         while(fread(bitBlock,read_size,2000000,fp)){
-            for(int i = 0;i<ftell(fp);i++){
+            for(int i = 0;i<=ftell(fp)/4;i++){
                 for(int j = 0; j <read_size*8*len_read;j++){
                     position--;
                     if (getBit(bitBlock[i],j) == (int)target){
@@ -76,7 +76,7 @@ unsigned int select(char target,char* file,char *extsn, int count){
     removeExt(file,strlen(extsn));
     if(extsn[1]=='s'){
         unsigned char *c = (unsigned char*)malloc(8000000*sizeof(unsigned char));
-        while(fread(c,sizeof(char),8000000,fp)){
+        while(fread(c,sizeof(unsigned char),8000000,fp)){
             for(int i = 0;i<ftell(fp);i++){
                 if (c[i] == target){
                     count--;
@@ -102,7 +102,7 @@ unsigned int select(char target,char* file,char *extsn, int count){
         }
         fseek( fp, 0, SEEK_SET );
         while(fread(bitBlock,read_size,2000000,fp)){
-            for(int i = 0;i<ftell(fp);i++){
+            for(int i = 0;i<=ftell(fp)/4;i++){
                 if(count == 0){
                     break;
                 }
@@ -130,14 +130,15 @@ unsigned int select(char target,char* file,char *extsn, int count){
 char getSymbol(char *file, int count){
     FILE *fp = fopen(strcat(file,".s"),"rb");
     removeExt(file,2);
-    char c = fgetc(fp);
-    while(c!=EOF){
-        count--;
-        if(count == 0){
-            fclose(fp);
-            return c;
+    unsigned char *c = (unsigned char*)malloc(8000000*sizeof(unsigned char));
+    while(fread(c,sizeof(unsigned char),8000000,fp)){
+        for(int i = 0; i<ftell(fp);i++){
+            count--;
+            if(count == 0){
+                fclose(fp);
+                return c[i];
+            }
         }
-        c = fgetc(fp);
     }
     fclose(fp);
     return '\0';
@@ -150,20 +151,46 @@ int RowsBef(char *file,int index, char syb){
     FILE *fp1;
     fp1 = fopen(strcat(file,".s"),"rb");
     removeExt(file,2);
-    char c = fgetc(fp1);
+    unsigned char *c = (unsigned char*)malloc(8000000*sizeof(unsigned char));
     int idx = 0;
     int sum = 0;
-    while(c!=EOF){
-        idx++;
-        index--;
-        if((int)c<(int)syb){
-            sum += select(1,file,".b",idx+1)-select(1,file,".b",idx);
+    while(fread(c,sizeof(unsigned char),8000000,fp1)){
+        for(int i = 0;i<ftell(fp1);i++){
+            idx++;
+            index--;
+            if((int)c[i]<(int)syb){
+                sum += select(1,file,".b",idx+1)-select(1,file,".b",idx);
+            }
+            if((int)c[i] == (int)syb && index>0){
+                sum += select(1,file,".b",idx+1)-select(1,file,".b",idx);
+            }
         }
-        if((int)c == (int)syb && index>0){
-            sum += select(1,file,".b",idx+1)-select(1,file,".b",idx);
-        }
-        c = fgetc(fp1);
     }
     fclose(fp1);
+    free(c);
     return sum;
+}
+void inplace_reverse(char * str)
+{
+  if (str){
+    char * end = str + strlen(str) - 1;
+#   define XOR_SWAP(a,b) do\
+    {\
+      a ^= b;\
+      b ^= a;\
+      a ^= b;\
+    } while (0)
+    while (str < end){
+      XOR_SWAP(*str, *end);
+      str++;
+      end--;
+    }
+#   undef XOR_SWAP
+  }
+}
+int compare( const void* a, const void* b)
+{
+     int int_a = * ( (int*) a );
+     int int_b = * ( (int*) b );
+     return (int_a > int_b) - (int_a < int_b);
 }
