@@ -130,18 +130,14 @@ unsigned int select(char target,char* file,char *extsn, int count){
 char getSymbol(char *file, int count){
     FILE *fp = fopen(strcat(file,".s"),"rb");
     removeExt(file,2);
-    unsigned char *c = (unsigned char*)malloc(8000000*sizeof(unsigned char));
-    while(fread(c,sizeof(unsigned char),8000000,fp)){
-        for(int i = 0; i<ftell(fp);i++){
-            count--;
-            if(count == 0){
-                fclose(fp);
-                return c[i];
-            }
-        }
-    }
+    char *c = (char*)malloc(4000000*sizeof(char));
+    fread(c,sizeof(char),4000000,fp);
     fclose(fp);
-    return '\0';
+    if(count > strlen(c)){
+        return '\0';
+    }else{
+        return c[count-1];
+    }
 }
 //input a index and its symbol, output the number of rows before in F table
 //consists of two parts:
@@ -170,8 +166,7 @@ int RowsBef(char *file,int index, char syb){
     free(c);
     return sum;
 }
-void inplace_reverse(char * str)
-{
+void inplace_reverse(char * str){
   if (str){
     char * end = str + strlen(str) - 1;
 #   define XOR_SWAP(a,b) do\
@@ -188,9 +183,12 @@ void inplace_reverse(char * str)
 #   undef XOR_SWAP
   }
 }
-int compare( const void* a, const void* b)
-{
+int compare( const void* a, const void* b){
      int int_a = * ( (int*) a );
      int int_b = * ( (int*) b );
      return (int_a > int_b) - (int_a < int_b);
+}
+int LF(char * file, int n, char symb,int *cs){
+    int tmp = rank(1,file,".b",n);
+    return select(1,file,".bb",cs[(int)symb]+ rank(symb,file,".s",tmp)) + n - select(1,file,".b",tmp);
 }
