@@ -175,6 +175,7 @@ int *Search(char *file,char *cs, char *pattern){
             ls = select(1,file,".bb",cst[(int)pattern[i]]+1+rank(pattern[i],file,".s",rank(1,file,".b",ls)))-1;
         }
     }
+    //problems: can't find the third 'ana' in shopping,why?
     int *idtf = (int*)malloc(5001*sizeof(int));
     int count = 0;
     for(int i = fr;i<=ls;i++){
@@ -200,6 +201,9 @@ int *Search(char *file,char *cs, char *pattern){
     idtf[0] = count;
     return idtf;
 }
+// char *findRecord(char *file,char *identifier){
+
+// }
 int main(int argc, char* argv[]){
     // strcpy(filepath,argv[2]);
     FILE *fp;
@@ -216,7 +220,7 @@ int main(int argc, char* argv[]){
     }else if(strcmp(argv[1],"-n")){
         int last_elmt = -1;
         int uniq = 0;
-        qsort(DupMatches,DupMatches[0],sizeof(int),compare);
+        mergeSort(DupMatches,1,DupMatches[0]);
         for(int i = 1; i<DupMatches[0]+1;i++){
             if(DupMatches[i] != last_elmt){
                 if(!strcmp(argv[1],"-a")){
@@ -230,6 +234,9 @@ int main(int argc, char* argv[]){
             printf("%d\n",uniq);
         }
     }
+    // else{
+
+    // }
     free(DupMatches);
     return 0;
 }
