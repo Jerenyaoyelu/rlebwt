@@ -176,6 +176,7 @@ int *Search(char *file,char *cs, char *pattern){
         }
     }
     //problems: can't find the third 'ana' in shopping,why?
+    //possible reason: file is too large, cannot read all
     int *idtf = (int*)malloc(5001*sizeof(int));
     int count = 0;
     for(int i = fr;i<=ls;i++){
@@ -201,9 +202,69 @@ int *Search(char *file,char *cs, char *pattern){
     idtf[0] = count;
     return idtf;
 }
-// char *findRecord(char *file,char *identifier){
-
-// }
+char *findRecord(char *file,char *identifier){
+    //generate c table
+    FILE *fp1,*fp2;
+    char *record;
+    fp1 = fopen(strcat(file,".b"),"rb");
+    removeExt(file,2);
+    char symbol = '\0';
+    int bit = 0;
+    int block = 0;
+    int read_size = sizeof(unsigned int);
+    int len_read = 1;
+    int ones = 1;
+    int c[256] = {0};
+    int temp[256] = {0};
+    int amount = 0;
+    unsigned int *b = (unsigned int*)malloc(1000000*sizeof(unsigned int));
+    //to see if the size of file is smaller than 4 bytes
+    if(fread(b,read_size,1000000,fp1)==0){
+        read_size = 1;
+        len_read = ftell(fp1);
+    }
+    fseek(fp1,0,SEEK_SET);
+    int isFirstSymbol = 1;
+    while(fread(b,read_size,1000000,fp1)){
+        for(int i = 0; i<=ftell(fp1)/4;i++){
+            if(i == ftell(fp1)/4){len_read = ftell(fp1)%4;}
+            for(int j = 0; j<read_size*8*len_read;j++){
+                bit = getBit(b[i],i*32+j);
+                if(bit == 1){
+                    if(isFirstSymbol == 0){
+                        symbol = getSymbol(file,ones);
+                        temp[(int)symbol] += (amount+1);
+                        amount = 0;
+                        ones++;
+                    }else{
+                        isFirstSymbol = 0;
+                    }
+                }else{
+                    amount++;
+                }
+            }
+        }
+        free(b);
+        b = (unsigned int*)malloc(1000000*sizeof(unsigned int));
+    }
+    //when last bit is 0, this step is needed
+    if(amount>0){
+        symbol = getSymbol(file,ones);
+        temp[(int)symbol] += (amount+1);
+        amount = 0;
+    }
+    fclose(fp1);
+    //c[0] stores the number of gap-filler ones
+    int rowsBf = 0;
+    for(int i = 1;i<256;i++){
+        if(temp[i]>0){
+            c[i] = rowsBf;
+            rowsBf += temp[i];
+            printf("%c %d\n",i,c[i]);
+        }
+    }
+    return record;
+}
 int main(int argc, char* argv[]){
     // strcpy(filepath,argv[2]);
     FILE *fp;
@@ -212,31 +273,26 @@ int main(int argc, char* argv[]){
     // printf("%c\n",getSymbol(argv[2],5));
     CsTable(argv[2]);
     // Check_bb(argv[2],0);
-    int *DupMatches = Search(argv[2],"cs.idx",pattern);
-    if(!strcmp(argv[1],"-m")){
-        if(DupMatches[0]> 0){
-            printf("%d\n",DupMatches[0]);
-        }
-    }else if(strcmp(argv[1],"-n")){
-        int last_elmt = -1;
-        int uniq = 0;
-        mergeSort(DupMatches,1,DupMatches[0]);
-        for(int i = 1; i<DupMatches[0]+1;i++){
-            if(DupMatches[i] != last_elmt){
-                if(!strcmp(argv[1],"-a")){
-                    printf("[%d]\n",DupMatches[i]);
+    if(strcmp(argv[1],"-n")){
+        int *DupMatches = Search(argv[2],"cs.idx",pattern);
+        if(!strcmp(argv[1],"-m")){
+            if(DupMatches[0]> 0){printf("%d\n",DupMatches[0]);}
+        }else{
+            int last_elmt = -1;
+            int uniq = 0;
+            mergeSort(DupMatches,1,DupMatches[0]);
+            for(int i = 1; i<DupMatches[0]+1;i++){
+                if(DupMatches[i] != last_elmt){
+                    if(!strcmp(argv[1],"-a")){printf("[%d]\n",DupMatches[i]);}
+                    uniq++;
+                    last_elmt = DupMatches[i];
                 }
-                uniq++;
-                last_elmt = DupMatches[i];
             }
+            if(!strcmp(argv[1],"-r")){printf("%d\n",uniq);}
         }
-        if(!strcmp(argv[1],"-r")){
-            printf("%d\n",uniq);
-        }
+        free(DupMatches);
+    }else{
+        char *tmp = findRecord(argv[2],"9");
     }
-    // else{
-
-    // }
-    free(DupMatches);
     return 0;
 }
