@@ -128,16 +128,21 @@ unsigned int select(char target,char* file,char *extsn, int count){
 //get symbol from s file
 //coincidently, when return '\0', it indicates that we are reading gap-fillers 1s in b
 char getSymbol(char *file, int count){
+    // char res;
     FILE *fp = fopen(strcat(file,".s"),"rb");
     removeExt(file,2);
-    char *c = (char*)malloc(4000000*sizeof(char));
-    fread(c,sizeof(char),4000000,fp);
+    // char *c = (char*)malloc(4000000*sizeof(char));
+    char c = '\0';
+    fseek(fp,count-1,SEEK_SET);
+    fread(&c,sizeof(char),1,fp);
     fclose(fp);
-    if(count > strlen(c)){
-        return '\0';
-    }else{
-        return c[count-1];
-    }
+    // if(count > ftell(fp)){
+    //     res = '\0';
+    // }else{
+    //     res = c[count-1];
+    // }
+    // free(c);
+    return c;
 }
 //input a index and its symbol, output the number of rows before in F table
 //consists of two parts:
