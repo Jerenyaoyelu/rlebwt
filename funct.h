@@ -297,9 +297,14 @@ int *backwardSearch(char *file,int *cst,char *identifier){
                 point[0] = select(1,file,".bb",cst[(int)identifier[i]]+1+rank(identifier[i],file,".s",rank(1,file,".b",point[0]-1)));
             }
             
-            if(getSymbol(file,rank(1,file,".b",point[1]))==identifier[i] &&(rank(1,file,".b",point[1])-rank(1,file,".b",point[1]-1)==0)){
+            if(
+                getSymbol(file,rank(1,file,".b",point[1]))==identifier[i] 
+                &&(rank(1,file,".b",point[1])-rank(1,file,".b",point[1]-1)==0)
+                &&(rank(1,file,".b",point[1]-1)-rank(1,file,".b",point[1]-2)>0)
+            ){
                 int cloest_one = select(1,file,".b",rank(1,file,".b",point[1]));
                 point[1] = select(1,file,".bb",cst[(int)identifier[i]]+rank(identifier[i],file,".s",rank(1,file,".b",point[1])))+point[1]-cloest_one+1;
+                // printf("%d\n",point[1]);
 
             }else{
                 point[1] = select(1,file,".bb",cst[(int)identifier[i]]+1+rank(identifier[i],file,".s",rank(1,file,".b",point[1])))-1;

@@ -159,27 +159,29 @@ int *Search(char *file,char *cs, char *pattern){
         }
     }
     fclose(fp);
-    for(int i=len-1;i>-1;i--){
-        //remember gap-filler 1s in b and bb, so position has to be positive for rank function in b and bb 
-        if(i == len-1){
-            fr = select(1,file,".bb",cst[(int)pattern[i]]+1);
-            //take negative input as the position argument to get the occurrence of first letter 
-            //when doing backward search
-            ls = select(1,file,".bb",cst[(int)pattern[i]]+1+rank(pattern[i],file,".s",-1))-1;
-        }else{
-            //cs to get # of 1s before
-            //rank to get the # of occ of current symbol up to the cloest 1
-            //fr-select(1,file,".b",rank(1,file,".b",fr)) to get the i-th current symbol if it is 0 in b
-            int cloest_one = select(1,file,".b",rank(1,file,".b",fr));
-            fr = select(1,file,".bb",cst[(int)pattern[i]]+1+rank(pattern[i],file,".s",rank(1,file,".b",cloest_one-1)))+(fr-cloest_one);
-            ls = select(1,file,".bb",cst[(int)pattern[i]]+1+rank(pattern[i],file,".s",rank(1,file,".b",ls)))-1;
-        }
-    }
+    // for(int i=len-1;i>-1;i--){
+    //     //remember gap-filler 1s in b and bb, so position has to be positive for rank function in b and bb 
+    //     if(i == len-1){
+    //         fr = select(1,file,".bb",cst[(int)pattern[i]]+1);
+    //         //take negative input as the position argument to get the occurrence of first letter 
+    //         //when doing backward search
+    //         ls = select(1,file,".bb",cst[(int)pattern[i]]+1+rank(pattern[i],file,".s",-1))-1;
+    //     }else{
+    //         //cs to get # of 1s before
+    //         //rank to get the # of occ of current symbol up to the cloest 1
+    //         //fr-select(1,file,".b",rank(1,file,".b",fr)) to get the i-th current symbol if it is 0 in b
+    //         int cloest_one = select(1,file,".b",rank(1,file,".b",fr));
+    //         fr = select(1,file,".bb",cst[(int)pattern[i]]+1+rank(pattern[i],file,".s",rank(1,file,".b",cloest_one-1)))+(fr-cloest_one);
+    //         ls = select(1,file,".bb",cst[(int)pattern[i]]+1+rank(pattern[i],file,".s",rank(1,file,".b",ls)))-1;
+    //     }
+    // }
+    int *frls = backwardSearch(file,cst,pattern);
+    // printf("%d %d\n",frls[0],frls[1]);
     //problems: can't find the third 'ana' in shopping,why?
     //possible reason: file is too large, cannot read all
     int *idtf = (int*)malloc(5001*sizeof(int));
     int count = 0;
-    for(int i = fr;i<=ls;i++){
+    for(int i = frls[0];i<=frls[1];i++){
         char sb = getSymbol(file,rank(1,file,".b",i));
         int Sybfront = i;
         identifier = 0;
@@ -369,7 +371,9 @@ int main(int argc, char* argv[]){
         free(DupMatches);
     }else{
         char *tmp = findRecord(argv[2],"cs.idx",pattern);
-        printf("%s\n",tmp);
+        if(strlen(tmp)>0){
+            printf("%s\n",tmp);
+        }
         free(tmp);
     }
     return 0;
