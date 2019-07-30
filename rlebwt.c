@@ -202,21 +202,27 @@ int *Search(char *file,char *cs, char *pattern){
     idtf[0] = count;
     return idtf;
 }
-char *findRecord(char *file,char *identifier){
-    //generate c table
+char *findRecord(char *file,char *cs,char *identifier){
+    //generate c table and occ table(here occ table is a table recording the number of rows of each block in b file/each row in s file)
     FILE *fp1,*fp2;
-    char *record;
     fp1 = fopen(strcat(file,".b"),"rb");
     removeExt(file,2);
+    fp2 = fopen("sooc.txt","wb");
     char symbol = '\0';
     int bit = 0;
     int block = 0;
     int read_size = sizeof(unsigned int);
     int len_read = 1;
     int ones = 1;
-    int c[256] = {0};
+    int c[256];
+    //init c table
+    //then I can grab the first symbol of bb in c
+    for(int j = 1;j<256;j++){
+        c[j] = -1;
+    }
     int temp[256] = {0};
     int amount = 0;
+    int *sooc = (int*)malloc(500000*sizeof(int));
     unsigned int *b = (unsigned int*)malloc(1000000*sizeof(unsigned int));
     //to see if the size of file is smaller than 4 bytes
     if(fread(b,read_size,1000000,fp1)==0){
@@ -234,14 +240,15 @@ char *findRecord(char *file,char *identifier){
                     if(isFirstSymbol == 0){
                         symbol = getSymbol(file,ones);
                         temp[(int)symbol] += (amount+1);
+                        // int tmp = amount+1;
+                        if(symbol != '\0'){
+                            // fwrite(&tmp,sizeof(int),1,fp2);
+                            sooc[ones-1] = amount+1;
+                        }
                         amount = 0;
                         ones++;
-                    }else{
-                        isFirstSymbol = 0;
-                    }
-                }else{
-                    amount++;
-                }
+                    }else{isFirstSymbol = 0;}
+                }else{amount++;}
             }
         }
         free(b);
@@ -254,15 +261,81 @@ char *findRecord(char *file,char *identifier){
         amount = 0;
     }
     fclose(fp1);
+    fclose(fp2);
+    free(b);
     //c[0] stores the number of gap-filler ones
     int rowsBf = 0;
     for(int i = 1;i<256;i++){
         if(temp[i]>0){
             c[i] = rowsBf;
             rowsBf += temp[i];
-            printf("%c %d\n",i,c[i]);
+            // printf("%c %d\n",i,c[i]);
         }
     }
+    //search record
+    //read cs table
+    int cst[256] = {0};
+    FILE *fp = fopen(cs,"rb");
+    int tmp = 0;
+    int idf = 0;//0 stands for symbol, 1 stands for #lessthan
+    int sybl = -1;
+    while(fread(&tmp,sizeof(tmp),1,fp)){
+        if(idf ==1){
+            cst[sybl] = tmp;
+            idf = 0;
+        }else{
+            sybl = tmp;
+            idf = 1;
+        }
+    }
+    fclose(fp);
+    //locate identifier and get the index in b file of '[' to do forward search 
+    int *fr_ls = backwardSearch(file,cst,identifier);
+    // printf("%d %d",fr_ls[0],fr_ls[1]);
+    //first, backward search to find the "[" before identifier[0]
+    //then, loop through all index of matched "[" to do forward search to find the "]" after identifier[-1]
+    //then start to decode the text by using forward decoding
+    int foundID = 0;
+    char readID[20] = {'\0'};
+    int *nxt;
+    //get the indx in b of ']' after the identifier
+    for(int i = fr_ls[0]; i<=fr_ls[1];i++){
+        int tp = rank(1,file,".b",i);
+        if(getSymbol(file,tp) == '['){
+            int l = 0;
+            nxt = Next(file,c,sooc,i);
+            while(1){
+                if((char)nxt[0] == ']'){
+                    if(!strcmp(readID,identifier)){
+                        foundID = 1;
+                        break;
+                    }else{break;}
+                }else{
+                    if(strlen(readID)<strlen(identifier)){
+                        readID[l] = (char) nxt[0];
+                        nxt = Next(file,c,sooc,nxt[1]);
+                        l++;
+                    }else{break;}
+                }
+            }
+            if(foundID == 1){
+                break;
+            }
+        }
+    }
+    // printf("%c %d\n",nxt[0],nxt[1]);
+    // printf("%s\n",readID);
+    char *record = (char*)malloc(50000*sizeof(char));
+    nxt = Next(file,c,sooc,nxt[1]);
+    // printf("%c %d",nxt[0],nxt[1]);
+    int length = 0;
+    while((char)nxt[0]!='['){
+        record[length] = (char)nxt[0];
+        length++;
+        nxt = Next(file,c,sooc,nxt[1]);
+    }
+    free(nxt);
+    free(sooc);
     return record;
 }
 int main(int argc, char* argv[]){
@@ -292,7 +365,9 @@ int main(int argc, char* argv[]){
         }
         free(DupMatches);
     }else{
-        char *tmp = findRecord(argv[2],"9");
+        char *tmp = findRecord(argv[2],"cs.idx",pattern);
+        printf("%s\n",tmp);
+        free(tmp);
     }
     return 0;
 }

@@ -126,6 +126,7 @@ unsigned int select(char target,char* file,char *extsn, int count){
     return index;
 };
 //get symbol from s file
+//when count is large than file size, it will return '\0'
 //coincidently, when return '\0', it indicates that we are reading gap-fillers 1s in b
 char getSymbol(char *file, int count){
     // char res;
@@ -241,4 +242,59 @@ void mergeSort(int arr[], int l, int r){
         mergeSort(arr, m+1, r); 
         merge(arr, l, m, r); 
     } 
+}
+int *Next(char *file, int *c, int *sooc, int idx){
+    int *next_idx = (int*)malloc(2*sizeof(int));
+    next_idx[0] = 0;
+    next_idx[1] = 0;
+    for(int j = 1;j<256;j++){
+        if(c[j]>=0){
+            if(c[j]<idx){next_idx[0] = j;}else{break;} 
+        }
+    }
+    int k = 1;
+    char s = '\0';
+    int ith = 0;
+    //get indx in b of next_syb
+    while(1){
+        s = getSymbol(file,k);
+        // printf("sooc %c %d\n",s,sooc[k-1]);
+        if(s == (char)next_idx[0]){
+            ith += sooc[k-1];
+            // printf("%c %d %d\n",s,ith,idx-c[next_idx[0]]);
+            // printf("%d %d\n",sooc[k-1],idx-c[next_idx[0]]);
+            if(ith >= idx-c[next_idx[0]]){
+                // printf("%c %d %d\n",s,next_idx[1],idx-c[next_idx[0]]);
+                next_idx[1] += idx-c[next_idx[0]];
+                break;
+            }
+        }else{
+            next_idx[1] += sooc[k-1];
+        }
+        k++;
+    }
+    return next_idx;
+}
+int *backwardSearch(char *file,int *cst,char *identifier){
+    int *point = (int*)malloc(2*sizeof(int));
+    int len = strlen(identifier);
+    for(int i=len-1;i>-1;i--){
+        //remember gap-filler 1s in b and bb, so position has to be positive for rank function in b and bb 
+        if(i == len-1){
+            point[0] = select(1,file,".bb",cst[(int)identifier[i]]+1);
+            //take negative input as the position argument to get the occurrence of first letter 
+            //when doing backward search
+            point[1] = select(1,file,".bb",cst[(int)identifier[i]]+1+rank(identifier[i],file,".s",-1))-1;
+            // printf("%d %d\n",point[0],point[1]);
+        }else{
+            //cs to get # of 1s before
+            //rank to get the # of occ of current symbol up to the cloest 1
+            //point[0]-select(1,file,".b",rank(1,file,".b",point[0])) to get the i-th current symbol if it is 0 in b
+            int cloest_one = select(1,file,".b",rank(1,file,".b",point[0]));
+            point[0] = select(1,file,".bb",cst[(int)identifier[i]]+1+rank(identifier[i],file,".s",rank(1,file,".b",cloest_one-1)))+(point[0]-cloest_one);
+            point[1] = select(1,file,".bb",cst[(int)identifier[i]]+1+rank(identifier[i],file,".s",rank(1,file,".b",point[1])))-1;
+            // printf("ss %d %d\n",point[0],point[1]);
+        }
+    }
+    return point;
 }
