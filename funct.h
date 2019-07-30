@@ -285,20 +285,26 @@ int *backwardSearch(char *file,int *cst,char *identifier){
             //take negative input as the position argument to get the occurrence of first letter 
             //when doing backward search
             point[1] = select(1,file,".bb",cst[(int)identifier[i]]+1+rank(identifier[i],file,".s",-1))-1;
-            printf("ss %d %d\n",point[0],point[1]);
+            // printf("ss %d %d\n",point[0],point[1]);
         }else{
             //cs to get # of 1s before
             //rank to get the # of occ of current symbol up to the cloest 1
             //point[0]-select(1,file,".b",rank(1,file,".b",point[0])) to get the i-th current symbol if it is 0 in b
-            point[0] = select(1,file,".bb",cst[(int)identifier[i]]+1+rank(identifier[i],file,".s",rank(1,file,".b",point[0]-1)));
+            if(getSymbol(file,rank(1,file,".b",point[0]))==identifier[i] && (rank(1,file,".b",point[0])-rank(1,file,".b",point[0]-1)==0)){
+                int cn = rank(1,file,".b",point[0]);
+                point[0] = select(1,file,".bb",cst[(int)identifier[i]]+rank(identifier[i],file,".s",cn))+point[0]-select(1,file,".b",cn);
+            }else{
+                point[0] = select(1,file,".bb",cst[(int)identifier[i]]+1+rank(identifier[i],file,".s",rank(1,file,".b",point[0]-1)));
+            }
+            
             if(getSymbol(file,rank(1,file,".b",point[1]))==identifier[i] &&(rank(1,file,".b",point[1])-rank(1,file,".b",point[1]-1)==0)){
-                int cloest_one = select(1,file,".b",rank(1,file,".b",point[0]));
-                point[1] = select(1,file,".bb",cst[(int)identifier[i]]+rank(identifier[i],file,".s",rank(1,file,".b",point[1])))+point[0]-cloest_one+1;
+                int cloest_one = select(1,file,".b",rank(1,file,".b",point[1]));
+                point[1] = select(1,file,".bb",cst[(int)identifier[i]]+rank(identifier[i],file,".s",rank(1,file,".b",point[1])))+point[1]-cloest_one+1;
 
             }else{
                 point[1] = select(1,file,".bb",cst[(int)identifier[i]]+1+rank(identifier[i],file,".s",rank(1,file,".b",point[1])))-1;
             }
-            printf("ss %d %d\n",point[0],point[1]);
+            // printf("ss %d %d\n",point[0],point[1]);
         }
     }
     return point;
