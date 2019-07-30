@@ -291,20 +291,23 @@ char *findRecord(char *file,char *cs,char *identifier){
     fclose(fp);
     //locate identifier and get the index in b file of '[' to do forward search 
     int *fr_ls = backwardSearch(file,cst,identifier);
-    // printf("%d %d",fr_ls[0],fr_ls[1]);
+    // printf("aa%d %d\n",fr_ls[0],fr_ls[1]);
     //first, backward search to find the "[" before identifier[0]
     //then, loop through all index of matched "[" to do forward search to find the "]" after identifier[-1]
     //then start to decode the text by using forward decoding
     int foundID = 0;
-    char readID[20] = {'\0'};
     int *nxt;
     //get the indx in b of ']' after the identifier
     for(int i = fr_ls[0]; i<=fr_ls[1];i++){
+        char readID[20] = {'\0'};
+        // printf("%d\n",i);
         int tp = rank(1,file,".b",i);
+        // printf("tp %d\n",tp);
         if(getSymbol(file,tp) == '['){
             int l = 0;
             nxt = Next(file,c,sooc,i);
             while(1){
+                // printf("%c %d\n",nxt[0],nxt[1]);
                 if((char)nxt[0] == ']'){
                     if(!strcmp(readID,identifier)){
                         foundID = 1;
