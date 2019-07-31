@@ -20,7 +20,7 @@ void CsTable(char *file){//file is command argument
     }
     fclose(fp);
     int sum = 0;
-    fp = fopen("cs.idx","wb");
+    fp = fopen("cs.txt","wb");
     for(int i = 0;i<256;i++){
         if(temp[i]>0){
             fwrite(&i,sizeof(i),1,fp);
@@ -50,11 +50,13 @@ void Check_bb(char *file, int fsk_pos){
     char extn[] = ".bbb";
     fp1 = fopen(strcat(file,extn),"rb");
     removeExt(file,strlen(extn));
-    if(fp1 == NULL){
+    if(fp1 != NULL){
         fclose(fp1);
         //init bb
         fp1 = fopen(strcat(file,".b"),"rb");
         removeExt(file,2);
+        FILE *fp2 = fopen(strcat(file,extn),"wb");
+        removeExt(file,strlen(extn));
         unsigned int *bb=(unsigned int*)malloc(1000000*sizeof(unsigned int));
         int read_size = sizeof(unsigned int);
         int len_read = 1;
@@ -71,75 +73,82 @@ void Check_bb(char *file, int fsk_pos){
                     bb[i] = pow(2,32)-1;
                 }
             }
-        }
-        //what to do with if not reaching the end with 8MB
-        if(ftell(fp1)!=SEEK_END){
-            printf("55\n");
-        }
-        //change 0s
-        unsigned int *bitBlock = (unsigned int*)malloc(1000000*sizeof(unsigned int));
-        fseek(fp1,0,SEEK_SET);
-        int block=0;//record the block read
-        char syb = '\0';
-        int bit = 0;
-        int bb_size = 0;
-        int write_size = 0;
-        while(fread(bitBlock,read_size,1000000,fp1)){
-            if(ftell(fp1)%4 == 0){
-                bb_size = ftell(fp1)/4;
-                write_size = ftell(fp1)/4;
+            //write initial bb file
+            if(ftell(fp1)%4==0){
+                // printf("%ld %ld\n",ftell(fp1)/4,ftell(fp1)%4);
+                fwrite(bb,sizeof(unsigned int),ftell(fp1)/4,fp2);
             }else{
-                bb_size = ftell(fp1)/4+1;
-                write_size = ftell(fp1);
+                // printf("%ld %ld\n",ftell(fp1)/4,ftell(fp1)%4);
+                fwrite(bb,sizeof(unsigned int),ftell(fp1)/4,fp2);
+                fwrite(&bb[ftell(fp1)/4],1,ftell(fp1)%4,fp2);
             }
-            for(int j = 0; j <bb_size;j++){
-                // printf("j %d\n",j);
-                for(int i = 0;i<read_size*8*len_read;i++){
-                    bit = getBit(bitBlock[j],block*32+i);
-                    // printf("%d %d\n",bit,block*32+i);
-                    //reduction of the time of reading files may be an approach to improve
-                    if(bit == 0){
-                        // get index in s
-                        int idx = rank(1,file,".b",block*32+i+1);
-                        // //get the symbol
-                        syb = getSymbol(file,idx);
-                        // printf("%c %d\n",syb,block*32+i+1);
-                        // //get place of 0s in bb
-                        int place = block*32+i+1-select(1,file,".b",idx)+RowsBef(file,idx,syb)+1;
-                        // printf("%d %d\n",block*32+i+1,place);
-                        // //change the specific bit into 0
-                        // //to change the 1st bit from right hand side, need 1<<0; 1<<8 will do nothing
-                        // bb[place/(read_size*8*len_read)] = bb[place/(read_size*8*len_read)] & ~(1<<((place/8+1)*8-place%8));
-                        if(place % 8 == 0){
-                            bb[place/(read_size*8*len_read)-1] = bb[place/(read_size*8*len_read)-1] & ~(1<<((place/8)*8-(8-place%8)));
-                        }else{
-                            bb[place/(read_size*8*len_read)] = bb[place/(read_size*8*len_read)] & ~(1<<((place/8+1)*8-place%8));
-                        }
-                    }
-                }
-                block++;
-            }
+            free(bb);
+            bb=(unsigned int*)malloc(1000000*sizeof(unsigned int));
         }
-        fclose(fp1);
-        // printf("%ld\n",ftell(fp1));
-        fp1 = fopen(strcat(file,extn),"wb");
-        // printf("%ld\n",ftell(fp1));
-        removeExt(file,strlen(extn));
-        if(bb_size == write_size){
-            fwrite(bb,read_size,write_size,fp1);
-        }else{
-            fwrite(bb,read_size,bb_size-1,fp1);
-        }
-        
-        // for(int k =0;k<bb_size;k++){
-        //     printf("%d\n",bb[k]);
-        // }
-        fclose(fp1);
         free(bb);
-        free(bitBlock);
+        fclose(fp2);
+        // unsigned int *bitBlock = (unsigned int*)malloc(1000000*sizeof(unsigned int));
+        // fseek(fp1,0,SEEK_SET);
+        // int block=0;//record the block read
+        // char syb = '\0';
+        // int bit = 0;
+        // int bb_size = 0;
+        // int write_size = 0;
+        // while(fread(bitBlock,read_size,1000000,fp1)){
+        //     if(ftell(fp1)%4 == 0){
+        //         bb_size = ftell(fp1)/4;
+        //         write_size = ftell(fp1)/4;
+        //     }else{
+        //         bb_size = ftell(fp1)/4+1;
+        //         write_size = ftell(fp1);
+        //     }
+        //     for(int j = 0; j <bb_size;j++){
+        //         // printf("j %d\n",j);
+        //         for(int i = 0;i<read_size*8*len_read;i++){
+        //             bit = getBit(bitBlock[j],block*32+i);
+        //             // printf("%d %d\n",bit,block*32+i);
+        //             //reduction of the time of reading files may be an approach to improve
+        //             if(bit == 0){
+        //                 // get index in s
+        //                 int idx = rank(1,file,".b",block*32+i+1);
+        //                 // //get the symbol
+        //                 syb = getSymbol(file,idx);
+        //                 // printf("%c %d\n",syb,block*32+i+1);
+        //                 // //get place of 0s in bb
+        //                 int place = block*32+i+1-select(1,file,".b",idx)+RowsBef(file,idx,syb)+1;
+        //                 // printf("%d %d\n",block*32+i+1,place);
+        //                 // //change the specific bit into 0
+        //                 // //to change the 1st bit from right hand side, need 1<<0; 1<<8 will do nothing
+        //                 // bb[place/(read_size*8*len_read)] = bb[place/(read_size*8*len_read)] & ~(1<<((place/8+1)*8-place%8));
+        //                 if(place % 8 == 0){
+        //                     bb[place/(read_size*8*len_read)-1] = bb[place/(read_size*8*len_read)-1] & ~(1<<((place/8)*8-(8-place%8)));
+        //                 }else{
+        //                     bb[place/(read_size*8*len_read)] = bb[place/(read_size*8*len_read)] & ~(1<<((place/8+1)*8-place%8));
+        //                 }
+        //             }
+        //         }
+        //         block++;
+        //     }
+        // }
+        // fclose(fp1);
+        // // printf("%ld\n",ftell(fp1));
+        // fp1 = fopen(strcat(file,extn),"wb");
+        // // printf("%ld\n",ftell(fp1));
+        // removeExt(file,strlen(extn));
+        // if(bb_size == write_size){
+        //     fwrite(bb,read_size,write_size,fp1);
+        // }else{
+        //     fwrite(bb,read_size,bb_size-1,fp1);
+        // }
+        
+        // // for(int k =0;k<bb_size;k++){
+        // //     printf("%d\n",bb[k]);
+        // // }
+        fclose(fp1);
+        // free(bitBlock);
     }
 }
-int *Search(char *file,char *cs, char *pattern){
+int *Search(char *file,char *cs, char *pattern,char *command){
     int len = strlen(pattern);
     int fr = -1,ls = -1;
     char c = pattern[len-1];
@@ -159,50 +168,39 @@ int *Search(char *file,char *cs, char *pattern){
         }
     }
     fclose(fp);
-    // for(int i=len-1;i>-1;i--){
-    //     //remember gap-filler 1s in b and bb, so position has to be positive for rank function in b and bb 
-    //     if(i == len-1){
-    //         fr = select(1,file,".bb",cst[(int)pattern[i]]+1);
-    //         //take negative input as the position argument to get the occurrence of first letter 
-    //         //when doing backward search
-    //         ls = select(1,file,".bb",cst[(int)pattern[i]]+1+rank(pattern[i],file,".s",-1))-1;
-    //     }else{
-    //         //cs to get # of 1s before
-    //         //rank to get the # of occ of current symbol up to the cloest 1
-    //         //fr-select(1,file,".b",rank(1,file,".b",fr)) to get the i-th current symbol if it is 0 in b
-    //         int cloest_one = select(1,file,".b",rank(1,file,".b",fr));
-    //         fr = select(1,file,".bb",cst[(int)pattern[i]]+1+rank(pattern[i],file,".s",rank(1,file,".b",cloest_one-1)))+(fr-cloest_one);
-    //         ls = select(1,file,".bb",cst[(int)pattern[i]]+1+rank(pattern[i],file,".s",rank(1,file,".b",ls)))-1;
-    //     }
-    // }
     int *frls = backwardSearch(file,cst,pattern);
-    // printf("%d %d\n",frls[0],frls[1]);
-    //problems: can't find the third 'ana' in shopping,why?
-    //possible reason: file is too large, cannot read all
-    int *idtf = (int*)malloc(5001*sizeof(int));
-    int count = 0;
-    for(int i = frls[0];i<=frls[1];i++){
-        char sb = getSymbol(file,rank(1,file,".b",i));
-        int Sybfront = i;
-        identifier = 0;
-        char id[30] = {'\0'}; 
-        while(sb != '['){
-            Sybfront = LF(file,Sybfront,sb,cst);
-            if(sb == ']'){identifier = 1;}
-            if(identifier == 1 && sb != ']'){
-                id[strlen(id)] = sb;
+    if(!strcmp(command,"-m")){
+        return frls;
+    }else{
+        // printf("%d %d\n",frls[0],frls[1]);
+        //problems: can't find the third 'ana' in shopping,why?
+        //possible reason: file is too large, cannot read all
+        int *idtf = (int*)malloc(5001*sizeof(int));
+        int count = 0;
+        for(int i = frls[0];i<=frls[1];i++){
+            char sb = getSymbol(file,rank(1,file,".b",i));
+            int Sybfront = i;
+            identifier = 0;
+            char id[30] = {'\0'}; 
+            //too slow
+            while(sb != '['){
+                Sybfront = LF(file,Sybfront,sb,cst);
+                if(sb == ']'){identifier = 1;}
+                if(identifier == 1 && sb != ']'){
+                    id[strlen(id)] = sb;
+                }
+                sb = getSymbol(file,rank(1,file,".b",Sybfront));
             }
-            sb = getSymbol(file,rank(1,file,".b",Sybfront));
+            //reverse the string
+            inplace_reverse(id);
+            if(atoi(id)>0){
+                idtf[count+1] = atoi(id);
+                count++;
+            }
         }
-        //reverse the string
-        inplace_reverse(id);
-        if(atoi(id)>0){
-            idtf[count+1] = atoi(id);
-            count++;
-        }
+        idtf[0] = count;
+        return idtf;
     }
-    idtf[0] = count;
-    return idtf;
 }
 char *findRecord(char *file,char *cs,char *identifier){
     //generate c table and occ table(here occ table is a table recording the number of rows of each block in b file/each row in s file)
@@ -350,11 +348,11 @@ int main(int argc, char* argv[]){
     char *pattern = argv[argc-1];
     // printf("%c\n",getSymbol(argv[2],5));
     CsTable(argv[2]);
-    // Check_bb(argv[2],0);
+    Check_bb(argv[2],0);
     if(strcmp(argv[1],"-n")){
-        int *DupMatches = Search(argv[2],"cs.idx",pattern);
+        int *DupMatches = Search(argv[2],"cs.txt",pattern,argv[1]);
         if(!strcmp(argv[1],"-m")){
-            if(DupMatches[0]> 0){printf("%d\n",DupMatches[0]);}
+            if(DupMatches[1]-DupMatches[0]>=0){printf("%d\n",DupMatches[1]-DupMatches[0]+1);}
         }else{
             int last_elmt = -1;
             int uniq = 0;
@@ -370,7 +368,7 @@ int main(int argc, char* argv[]){
         }
         free(DupMatches);
     }else{
-        char *tmp = findRecord(argv[2],"cs.idx",pattern);
+        char *tmp = findRecord(argv[2],"cs.txt",pattern);
         if(strlen(tmp)>0){
             printf("%s\n",tmp);
         }

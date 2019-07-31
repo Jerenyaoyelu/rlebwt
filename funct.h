@@ -35,6 +35,8 @@ int rank(char target, char *file,char *extsn, int position){
             if(position == 0){
                 break;
             }
+            free(c);
+            c=(unsigned char*)malloc(8000000*sizeof(unsigned char));
         }
         free(c);
     }else{//rank in b/bb file
@@ -64,6 +66,8 @@ int rank(char target, char *file,char *extsn, int position){
             if(position == 0){
                 break;
             }
+            free(bitBlock);
+            bitBlock=(unsigned int*)malloc(2000000*sizeof(unsigned int));
         }
         free(bitBlock);
     }
@@ -89,6 +93,8 @@ unsigned int select(char target,char* file,char *extsn, int count){
             if(count == 0){
                 break;
             }
+            free(c);
+            c=(unsigned char*)malloc(8000000*sizeof(unsigned char));
         }
         free(c);
     }else{//rank in b/bb file
@@ -119,6 +125,8 @@ unsigned int select(char target,char* file,char *extsn, int count){
             if(count == 0){
                 break;
             }
+            free(bitBlock);
+            bitBlock=(unsigned int*)malloc(2000000*sizeof(unsigned int));
         }
         free(bitBlock);
     }
@@ -132,17 +140,10 @@ char getSymbol(char *file, int count){
     // char res;
     FILE *fp = fopen(strcat(file,".s"),"rb");
     removeExt(file,2);
-    // char *c = (char*)malloc(4000000*sizeof(char));
     char c = '\0';
     fseek(fp,count-1,SEEK_SET);
     fread(&c,sizeof(char),1,fp);
     fclose(fp);
-    // if(count > ftell(fp)){
-    //     res = '\0';
-    // }else{
-    //     res = c[count-1];
-    // }
-    // free(c);
     return c;
 }
 //input a index and its symbol, output the number of rows before in F table
@@ -300,10 +301,10 @@ int *backwardSearch(char *file,int *cst,char *identifier){
             if(
                 getSymbol(file,rank(1,file,".b",point[1]))==identifier[i] 
                 &&(rank(1,file,".b",point[1])-rank(1,file,".b",point[1]-1)==0)
-                &&(rank(1,file,".b",point[1]-1)-rank(1,file,".b",point[1]-2)>0)
+                // &&(rank(1,file,".b",point[1]-1)-rank(1,file,".b",point[1]-2)>0)
             ){
                 int cloest_one = select(1,file,".b",rank(1,file,".b",point[1]));
-                point[1] = select(1,file,".bb",cst[(int)identifier[i]]+rank(identifier[i],file,".s",rank(1,file,".b",point[1])))+point[1]-cloest_one+1;
+                point[1] = select(1,file,".bb",cst[(int)identifier[i]]+rank(identifier[i],file,".s",rank(1,file,".b",point[1])))+point[1]-cloest_one;
                 // printf("%d\n",point[1]);
 
             }else{
