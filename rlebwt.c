@@ -2,6 +2,9 @@
 #include<stdlib.h>
 #include<string.h>
 #include<math.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #include "funct.h"
 
@@ -10,7 +13,7 @@
     //then by using fwrite in 32-bits representation, but when the number is smaller than 255, three blocks of 8-bits will all be 0s
 //2. because of writing integers into binary files, the offset 0 starts from left instead of right as normal binary sense
 //3. but all these things did not create problems is that when reading cs file, the consistency is kept.
-void CsTable(char *file){//file is command argument
+void CsTable(char *file,char *path){//file is command argument
     FILE *fp = fopen(strcat(file,".s"),"r");
     removeExt(file,2);
     char s = '\0';
@@ -41,11 +44,11 @@ void CsTable(char *file){//file is command argument
     //2.3 count1 = rank1(b,i)
     //2.4 read s one by one and get all symbol not larger than si, count all its occurrences in B
         //2.4.1 say symbol sj, the j-th one in s
-        //2.4.2 select1(b,j), and then count rows since row select1(b,j) until encountering another 1, denote result as cj
+        //2.4.2 slect1(b,j), and then count rows since row slect1(b,j) until encountering another 1, denote result as cj
         //2.4.3 get all this counts, cj,ck,....,cz
-    //2.5 get the distance bewteen i and the closest 1, i-select1(b,rank1(b,i))
-//so the corresponding index in bb of 0s in b is sum(cj,ck,....,cz)+i-select1(b,rank1(b,i))+1
-void Check_bb(char *file, int fsk_pos){
+    //2.5 get the distance bewteen i and the closest 1, i-slect1(b,rank1(b,i))
+//so the corresponding index in bb of 0s in b is sum(cj,ck,....,cz)+i-slect1(b,rank1(b,i))+1
+void Check_bb(char *file){
     FILE *fp1;
     char extn[] = ".bbb";
     fp1 = fopen(strcat(file,extn),"rb");
@@ -118,7 +121,7 @@ void Check_bb(char *file, int fsk_pos){
                         syb = getSymbol(file,idx);
                         // printf("%c %d\n",syb,block*32+i+1);
                         // //get place of 0s in bb
-                        int place = block*32+i+1-select(1,file,".b",idx)+RowsBef(file,idx,syb)+1;
+                        int place = block*32+i+1-slect(1,file,".b",idx)+RowsBef(file,idx,syb)+1;
                         // printf("%d %d\n",block*32+i+1,place);
                         //change the specific bit into 0
                         //to change the 1st bit from right hand side, need 1<<0; 1<<8 will do nothing
@@ -346,9 +349,11 @@ int main(int argc, char* argv[]){
     FILE *fp;
     int bb;
     char *pattern = argv[argc-1];
+    //check if index folder exist
+    
     // printf("%c\n",getSymbol(argv[2],5));
-    CsTable(argv[2]);
-    Check_bb(argv[2],0);
+    CsTable(argv[2],"~/a2/dummy");
+    Check_bb(argv[2]);
     if(strcmp(argv[1],"-n")){
         int *DupMatches = Search(argv[2],"cs.txt",pattern,argv[1]);
         if(!strcmp(argv[1],"-m")){

@@ -74,7 +74,7 @@ int rank(char target, char *file,char *extsn, int position){
     fclose(fp);
     return count;
 }
-unsigned int select(char target,char* file,char *extsn, int count){
+int slect(char target, char* file, char *extsn, int count){
     int index = 0;
     FILE *fp = fopen(strcat(file,extsn),"r");
     removeExt(file,strlen(extsn));
@@ -162,10 +162,10 @@ int RowsBef(char *file,int index, char syb){
             idx++;
             index--;
             if((int)c[i]<(int)syb){
-                sum += select(1,file,".b",idx+1)-select(1,file,".b",idx);
+                sum += slect(1,file,".b",idx+1)-slect(1,file,".b",idx);
             }
             if((int)c[i] == (int)syb && index>0){
-                sum += select(1,file,".b",idx+1)-select(1,file,".b",idx);
+                sum += slect(1,file,".b",idx+1)-slect(1,file,".b",idx);
             }
         }
     }
@@ -192,7 +192,7 @@ void inplace_reverse(char * str){
 }
 int LF(char * file, int n, char symb,int *cs){
     int tmp = rank(1,file,".b",n);
-    return select(1,file,".bb",cs[(int)symb]+ rank(symb,file,".s",tmp)) + n - select(1,file,".b",tmp);
+    return slect(1,file,".bb",cs[(int)symb]+ rank(symb,file,".s",tmp)) + n - slect(1,file,".b",tmp);
 }
 // Merges two subarrays of arr[]. The first subarray is arr[l..m], the second subarray is arr[m+1..r] 
 void merge(int arr[], int l, int m, int r) { 
@@ -282,20 +282,20 @@ int *backwardSearch(char *file,int *cst,char *identifier){
     for(int i=len-1;i>-1;i--){
         //remember gap-filler 1s in b and bb, so position has to be positive for rank function in b and bb 
         if(i == len-1){
-            point[0] = select(1,file,".bb",cst[(int)identifier[i]]+1);
+            point[0] = slect(1,file,".bb",cst[(int)identifier[i]]+1);
             //take negative input as the position argument to get the occurrence of first letter 
             //when doing backward search
-            point[1] = select(1,file,".bb",cst[(int)identifier[i]]+1+rank(identifier[i],file,".s",-1))-1;
+            point[1] = slect(1,file,".bb",cst[(int)identifier[i]]+1+rank(identifier[i],file,".s",-1))-1;
             // printf("ss %d %d\n",point[0],point[1]);
         }else{
             //cs to get # of 1s before
             //rank to get the # of occ of current symbol up to the cloest 1
-            //point[0]-select(1,file,".b",rank(1,file,".b",point[0])) to get the i-th current symbol if it is 0 in b
+            //point[0]-slect(1,file,".b",rank(1,file,".b",point[0])) to get the i-th current symbol if it is 0 in b
             if(getSymbol(file,rank(1,file,".b",point[0]))==identifier[i] && (rank(1,file,".b",point[0])-rank(1,file,".b",point[0]-1)==0)){
                 int cn = rank(1,file,".b",point[0]);
-                point[0] = select(1,file,".bb",cst[(int)identifier[i]]+rank(identifier[i],file,".s",cn))+point[0]-select(1,file,".b",cn);
+                point[0] = slect(1,file,".bb",cst[(int)identifier[i]]+rank(identifier[i],file,".s",cn))+point[0]-slect(1,file,".b",cn);
             }else{
-                point[0] = select(1,file,".bb",cst[(int)identifier[i]]+1+rank(identifier[i],file,".s",rank(1,file,".b",point[0]-1)));
+                point[0] = slect(1,file,".bb",cst[(int)identifier[i]]+1+rank(identifier[i],file,".s",rank(1,file,".b",point[0]-1)));
             }
             
             if(
@@ -303,14 +303,13 @@ int *backwardSearch(char *file,int *cst,char *identifier){
                 &&(rank(1,file,".b",point[1])-rank(1,file,".b",point[1]-1)==0)
                 // &&(rank(1,file,".b",point[1]-1)-rank(1,file,".b",point[1]-2)>0)
             ){
-                int cloest_one = select(1,file,".b",rank(1,file,".b",point[1]));
-                point[1] = select(1,file,".bb",cst[(int)identifier[i]]+rank(identifier[i],file,".s",rank(1,file,".b",point[1])))+point[1]-cloest_one;
+                int cloest_one = slect(1,file,".b",rank(1,file,".b",point[1]));
+                point[1] = slect(1,file,".bb",cst[(int)identifier[i]]+rank(identifier[i],file,".s",rank(1,file,".b",point[1])))+point[1]-cloest_one;
                 // printf("%d\n",point[1]);
 
             }else{
-                point[1] = select(1,file,".bb",cst[(int)identifier[i]]+1+rank(identifier[i],file,".s",rank(1,file,".b",point[1])))-1;
+                point[1] = slect(1,file,".bb",cst[(int)identifier[i]]+1+rank(identifier[i],file,".s",rank(1,file,".b",point[1])))-1;
             }
-            // printf("ss %d %d\n",point[0],point[1]);
         }
     }
     return point;
