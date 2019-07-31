@@ -87,65 +87,65 @@ void Check_bb(char *file, int fsk_pos){
         }
         free(bb);
         fclose(fp2);
-        // unsigned int *bitBlock = (unsigned int*)malloc(1000000*sizeof(unsigned int));
-        // fseek(fp1,0,SEEK_SET);
-        // int block=0;//record the block read
-        // char syb = '\0';
-        // int bit = 0;
-        // int bb_size = 0;
-        // int write_size = 0;
-        // while(fread(bitBlock,read_size,1000000,fp1)){
-        //     if(ftell(fp1)%4 == 0){
-        //         bb_size = ftell(fp1)/4;
-        //         write_size = ftell(fp1)/4;
-        //     }else{
-        //         bb_size = ftell(fp1)/4+1;
-        //         write_size = ftell(fp1);
-        //     }
-        //     for(int j = 0; j <bb_size;j++){
-        //         // printf("j %d\n",j);
-        //         for(int i = 0;i<read_size*8*len_read;i++){
-        //             bit = getBit(bitBlock[j],block*32+i);
-        //             // printf("%d %d\n",bit,block*32+i);
-        //             //reduction of the time of reading files may be an approach to improve
-        //             if(bit == 0){
-        //                 // get index in s
-        //                 int idx = rank(1,file,".b",block*32+i+1);
-        //                 // //get the symbol
-        //                 syb = getSymbol(file,idx);
-        //                 // printf("%c %d\n",syb,block*32+i+1);
-        //                 // //get place of 0s in bb
-        //                 int place = block*32+i+1-select(1,file,".b",idx)+RowsBef(file,idx,syb)+1;
-        //                 // printf("%d %d\n",block*32+i+1,place);
-        //                 // //change the specific bit into 0
-        //                 // //to change the 1st bit from right hand side, need 1<<0; 1<<8 will do nothing
-        //                 // bb[place/(read_size*8*len_read)] = bb[place/(read_size*8*len_read)] & ~(1<<((place/8+1)*8-place%8));
-        //                 if(place % 8 == 0){
-        //                     bb[place/(read_size*8*len_read)-1] = bb[place/(read_size*8*len_read)-1] & ~(1<<((place/8)*8-(8-place%8)));
-        //                 }else{
-        //                     bb[place/(read_size*8*len_read)] = bb[place/(read_size*8*len_read)] & ~(1<<((place/8+1)*8-place%8));
-        //                 }
-        //             }
-        //         }
-        //         block++;
-        //     }
-        // }
-        // fclose(fp1);
-        // // printf("%ld\n",ftell(fp1));
-        // fp1 = fopen(strcat(file,extn),"wb");
-        // // printf("%ld\n",ftell(fp1));
-        // removeExt(file,strlen(extn));
-        // if(bb_size == write_size){
-        //     fwrite(bb,read_size,write_size,fp1);
-        // }else{
-        //     fwrite(bb,read_size,bb_size-1,fp1);
-        // }
-        
-        // // for(int k =0;k<bb_size;k++){
-        // //     printf("%d\n",bb[k]);
-        // // }
+
+        FILE *fp3 = fopen(strcat(file,extn),"r+");
+        removeExt(file,strlen(extn));
+        unsigned int *bitBlock = (unsigned int*)malloc(1000000*sizeof(unsigned int));
+        fseek(fp1,0,SEEK_SET);
+        int block=0;//record the block read
+        char syb = '\0';
+        int bit = 0;
+        int bb_size = 0;
+        int write_size = 0;
+        while(fread(bitBlock,read_size,1000000,fp1)){
+            if(ftell(fp1)%4 == 0){
+                bb_size = ftell(fp1)/4;
+                write_size = ftell(fp1)/4;
+            }else{
+                bb_size = ftell(fp1)/4+1;
+                write_size = ftell(fp1);
+            }
+            for(int j = 0; j <bb_size;j++){
+                // printf("j %d\n",j);
+                for(int i = 0;i<read_size*8*len_read;i++){
+                    bit = getBit(bitBlock[j],block*32+i);
+                    // printf("%d %d\n",bit,block*32+i);
+                    //reduction of the time of reading files may be an approach to improve
+                    if(bit == 0){
+                        // get index in s
+                        int idx = rank(1,file,".b",block*32+i+1);
+                        // //get the symbol
+                        syb = getSymbol(file,idx);
+                        // printf("%c %d\n",syb,block*32+i+1);
+                        // //get place of 0s in bb
+                        int place = block*32+i+1-select(1,file,".b",idx)+RowsBef(file,idx,syb)+1;
+                        // printf("%d %d\n",block*32+i+1,place);
+                        //change the specific bit into 0
+                        //to change the 1st bit from right hand side, need 1<<0; 1<<8 will do nothing
+                        int atc = 0;
+                        if(place%8 == 0){
+                            fseek(fp3,place/8-1,SEEK_SET);
+                            fread(&atc,1,1,fp3);
+                            atc = atc & ~(1<<(place%8));
+                            fseek(fp3,place/8-1,SEEK_SET);
+                            fwrite(&atc,1,1,fp3);
+                        }else{
+                            fseek(fp3,place/8,SEEK_SET);
+                            fread(&atc,1,1,fp3);
+                            atc = atc & ~(1<<(8-place%8));
+                            fseek(fp3,place/8,SEEK_SET);
+                            fwrite(&atc,1,1,fp3);
+                        }
+                    }
+                }
+                block++;
+            }
+            free(bitBlock);
+            bitBlock = (unsigned int*)malloc(1000000*sizeof(unsigned int));
+        }
         fclose(fp1);
-        // free(bitBlock);
+        fclose(fp3);
+        free(bitBlock);
     }
 }
 int *Search(char *file,char *cs, char *pattern,char *command){
