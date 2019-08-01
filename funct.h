@@ -1,4 +1,5 @@
 #include<string.h>
+#include <sys/stat.h>
 
 // get n continuous bits from source starting at the offset bit
 // (source >> offset) & ((1 << n) - 1) 
@@ -313,4 +314,7 @@ int *backwardSearch(char *file,int *cst,char *identifier){
         }
     }
     return point;
+}
+void indexfolder(char *path){
+    mkdir(path,0777);
 }

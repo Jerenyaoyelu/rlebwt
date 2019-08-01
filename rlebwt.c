@@ -2,9 +2,6 @@
 #include<stdlib.h>
 #include<string.h>
 #include<math.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
 
 #include "funct.h"
 
@@ -23,7 +20,9 @@ void CsTable(char *file,char *path){//file is command argument
     }
     fclose(fp);
     int sum = 0;
-    fp = fopen("cs.txt","wb");
+    // removeExt(path,strlen("/cs.txt"));
+    fp = fopen(strcat(path,"/cs.txt"),"wb");
+    removeExt(path,strlen("cs.txt"));
     for(int i = 0;i<256;i++){
         if(temp[i]>0){
             fwrite(&i,sizeof(i),1,fp);
@@ -50,10 +49,10 @@ void CsTable(char *file,char *path){//file is command argument
 //so the corresponding index in bb of 0s in b is sum(cj,ck,....,cz)+i-slect1(b,rank1(b,i))+1
 void Check_bb(char *file){
     FILE *fp1;
-    char extn[] = ".bbb";
+    char extn[] = ".bb";
     fp1 = fopen(strcat(file,extn),"rb");
     removeExt(file,strlen(extn));
-    if(fp1 != NULL){
+    if(fp1 == NULL){
         fclose(fp1);
         //init bb
         fp1 = fopen(strcat(file,".b"),"rb");
@@ -151,13 +150,14 @@ void Check_bb(char *file){
         free(bitBlock);
     }
 }
-int *Search(char *file,char *cs, char *pattern,char *command){
+int *Search(char *file,char *cs, char *pattern,char *command,char *writePath){
     int len = strlen(pattern);
     int fr = -1,ls = -1;
     char c = pattern[len-1];
     int cst[256] = {0};
     //read cs table
-    FILE *fp = fopen(cs,"rb");
+    FILE *fp = fopen(strcat(writePath,cs),"rb");
+    removeExt(writePath,strlen(cs));
     int tmp = 0;
     int identifier = 0;//0 stands for symbol, 1 stands for #lessthan
     int symbol = -1;
@@ -205,15 +205,13 @@ int *Search(char *file,char *cs, char *pattern,char *command){
         return idtf;
     }
 }
-char *findRecord(char *file,char *cs,char *identifier){
+char *findRecord(char *file,char *cs,char *identifier,char *writePath){
     //generate c table and occ table(here occ table is a table recording the number of rows of each block in b file/each row in s file)
     FILE *fp1,*fp2;
     fp1 = fopen(strcat(file,".b"),"rb");
     removeExt(file,2);
-    fp2 = fopen("sooc.txt","wb");
     char symbol = '\0';
     int bit = 0;
-    int block = 0;
     int read_size = sizeof(unsigned int);
     int len_read = 1;
     int ones = 1;
@@ -264,7 +262,6 @@ char *findRecord(char *file,char *cs,char *identifier){
         amount = 0;
     }
     fclose(fp1);
-    fclose(fp2);
     free(b);
     //c[0] stores the number of gap-filler ones
     int rowsBf = 0;
@@ -278,7 +275,8 @@ char *findRecord(char *file,char *cs,char *identifier){
     //search record
     //read cs table
     int cst[256] = {0};
-    FILE *fp = fopen(cs,"rb");
+    FILE *fp = fopen(strcat(writePath,cs),"rb");
+    removeExt(writePath,strlen(cs));
     int tmp = 0;
     int idf = 0;//0 stands for symbol, 1 stands for #lessthan
     int sybl = -1;
@@ -303,14 +301,11 @@ char *findRecord(char *file,char *cs,char *identifier){
     //get the indx in b of ']' after the identifier
     for(int i = fr_ls[0]; i<=fr_ls[1];i++){
         char readID[20] = {'\0'};
-        // printf("%d\n",i);
         int tp = rank(1,file,".b",i);
-        // printf("tp %d\n",tp);
         if(getSymbol(file,tp) == '['){
             int l = 0;
             nxt = Next(file,c,sooc,i);
             while(1){
-                // printf("%c %d\n",nxt[0],nxt[1]);
                 if((char)nxt[0] == ']'){
                     if(!strcmp(readID,identifier)){
                         foundID = 1;
@@ -329,34 +324,40 @@ char *findRecord(char *file,char *cs,char *identifier){
             }
         }
     }
-    // printf("%c %d\n",nxt[0],nxt[1]);
+    if(foundID == 0){
+        return NULL;
+    }
     // printf("%s\n",readID);
-    char *record = (char*)malloc(50000*sizeof(char));
+    // char *record = (char*)malloc(50000*sizeof(char));
+    char tprecord[50000] = {'\0'};
     nxt = Next(file,c,sooc,nxt[1]);
     // printf("%c %d",nxt[0],nxt[1]);
     int length = 0;
     while((char)nxt[0]!='['){
-        record[length] = (char)nxt[0];
+        tprecord[length] = (char)nxt[0];
         length++;
         nxt = Next(file,c,sooc,nxt[1]);
     }
     free(nxt);
     free(sooc);
+    char *record = tprecord;
     return record;
 }
 int main(int argc, char* argv[]){
-    // strcpy(filepath,argv[2]);
+    // parse the command
+    char *option = strdup(argv[1]);
+    char *readPath = strdup(argv[2]);
+    char *writePath = strdup(argv[3]);
+    char *pattern = argv[argc-1];
     FILE *fp;
     int bb;
-    char *pattern = argv[argc-1];
-    //check if index folder exist
-    
-    // printf("%c\n",getSymbol(argv[2],5));
-    CsTable(argv[2],"~/a2/dummy");
-    Check_bb(argv[2]);
-    if(strcmp(argv[1],"-n")){
-        int *DupMatches = Search(argv[2],"cs.txt",pattern,argv[1]);
-        if(!strcmp(argv[1],"-m")){
+    //check if index folder exists, if not, create one
+    indexfolder(writePath);
+    CsTable(readPath,writePath);
+    Check_bb(readPath);
+    if(strcmp(option,"-n")){
+        int *DupMatches = Search(readPath,"cs.txt",pattern,option,writePath);
+        if(!strcmp(option,"-m")){
             if(DupMatches[1]-DupMatches[0]>=0){printf("%d\n",DupMatches[1]-DupMatches[0]+1);}
         }else{
             int last_elmt = -1;
@@ -364,20 +365,20 @@ int main(int argc, char* argv[]){
             mergeSort(DupMatches,1,DupMatches[0]);
             for(int i = 1; i<DupMatches[0]+1;i++){
                 if(DupMatches[i] != last_elmt){
-                    if(!strcmp(argv[1],"-a")){printf("[%d]\n",DupMatches[i]);}
+                    if(!strcmp(option,"-a")){printf("[%d]\n",DupMatches[i]);}
                     uniq++;
                     last_elmt = DupMatches[i];
                 }
             }
-            if(!strcmp(argv[1],"-r")){printf("%d\n",uniq);}
+            if(!strcmp(option,"-r")){printf("%d\n",uniq);}
         }
         free(DupMatches);
     }else{
-        char *tmp = findRecord(argv[2],"cs.txt",pattern);
-        if(strlen(tmp)>0){
+        char *tmp = findRecord(readPath,"cs.txt",pattern,writePath);
+        if(tmp != NULL){
             printf("%s\n",tmp);
         }
-        free(tmp);
+        // free(tmp);
     }
     return 0;
 }
