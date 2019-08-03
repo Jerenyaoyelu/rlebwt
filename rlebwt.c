@@ -172,38 +172,38 @@ int *Search(char *file,char *cs, char *pattern,char *command,char *writePath){
     }
     fclose(fp);
     int *frls = backwardSearch(file,cst,pattern);
-    if(!strcmp(command,"-m")){
-        return frls;
-    }else{
-        // printf("%d %d\n",frls[0],frls[1]);
-        //problems: can't find the third 'ana' in shopping,why?
-        //possible reason: file is too large, cannot read all
-        int *idtf = (int*)malloc(5001*sizeof(int));
-        int count = 0;
-        for(int i = frls[0];i<=frls[1];i++){
-            char sb = getSymbol(file,rank(1,file,".b",i));
-            int Sybfront = i;
-            identifier = 0;
-            char id[30] = {'\0'}; 
-            //too slow
-            while(sb != '['){
-                Sybfront = LF(file,Sybfront,sb,cst);
-                if(sb == ']'){identifier = 1;}
-                if(identifier == 1 && sb != ']'){
-                    id[strlen(id)] = sb;
-                }
-                sb = getSymbol(file,rank(1,file,".b",Sybfront));
+    // if(!strcmp(command,"-m")){
+    //     return frls;
+    // }else{
+    // printf("%d %d\n",frls[0],frls[1]);
+    //problems: can't find the third 'ana' in shopping,why?
+    //possible reason: file is too large, cannot read all
+    int *idtf = (int*)malloc(5001*sizeof(int));
+    int count = 0;
+    for(int i = frls[0];i<=frls[1];i++){
+        char sb = getSymbol(file,rank(1,file,".b",i));
+        int Sybfront = i;
+        identifier = 0;
+        char id[30] = {'\0'}; 
+        //too slow
+        while(sb != '['){
+            Sybfront = LF(file,Sybfront,sb,cst);
+            if(sb == ']'){identifier = 1;}
+            if(identifier == 1 && sb != ']'){
+                id[strlen(id)] = sb;
             }
-            //reverse the string
-            inplace_reverse(id);
-            if(atoi(id)>0){
-                idtf[count+1] = atoi(id);
-                count++;
-            }
+            sb = getSymbol(file,rank(1,file,".b",Sybfront));
         }
-        idtf[0] = count;
-        return idtf;
+        //reverse the string
+        inplace_reverse(id);
+        if(atoi(id)>0){
+            idtf[count+1] = atoi(id);
+            count++;
+        }
     }
+    idtf[0] = count;
+    return idtf;
+    // }
 }
 char *findRecord(char *file,char *cs,char *identifier,char *writePath){
     //generate c table and occ table(here occ table is a table recording the number of rows of each block in b file/each row in s file)
@@ -358,7 +358,7 @@ int main(int argc, char* argv[]){
     if(strcmp(option,"-n")){
         int *DupMatches = Search(readPath,"cs.txt",pattern,option,writePath);
         if(!strcmp(option,"-m")){
-            if(DupMatches[1]-DupMatches[0]>=0){printf("%d\n",DupMatches[1]-DupMatches[0]+1);}
+            if(DupMatches[0]>0){printf("%d\n",DupMatches[0]);}
         }else{
             int last_elmt = -1;
             int uniq = 0;
