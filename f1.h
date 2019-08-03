@@ -64,8 +64,8 @@ unsigned int rank(char target, char *file,char *extsn, unsigned int position, un
     fclose(fp);
     return count;
 }
-int slect(char target, char* file, char *extsn, int count, int readBlock){
-    int index = 0;
+unsigned int slect(char target, char* file, char *extsn, unsigned int count, unsigned int readBlock){
+    unsigned int index = 0;
     FILE *fp = fopen(strcat(file,extsn),"r");
     removeExt(file,strlen(extsn));
     fseek( fp, readBlock, SEEK_SET );
@@ -115,7 +115,7 @@ int slect(char target, char* file, char *extsn, int count, int readBlock){
 //get symbol from s file
 //when count is large than file size, it will return '\0'
 //coincidently, when return '\0', it indicates that we are reading gap-fillers 1s in b
-char getSymbol(char *file, int count){
+char getSymbol(char *file, unsigned int count){
     // char res;
     FILE *fp = fopen(strcat(file,".s"),"rb");
     removeExt(file,2);
@@ -125,174 +125,105 @@ char getSymbol(char *file, int count){
     fclose(fp);
     return c;
 }
-//input a index and its symbol, output the number of rows before in F table
-//consists of two parts:
-    //1. all symbols smaller that it
-    //2. all symbols same as it but before idx in s
-// int RowsBef(char *file,int index, char syb){
-//     FILE *fp1;
-//     fp1 = fopen(strcat(file,".s"),"rb");
-//     removeExt(file,2);
-//     unsigned char *c = (unsigned char*)malloc(8000000*sizeof(unsigned char));
-//     int idx = 0;
-//     int sum = 0;
-//     while(fread(c,sizeof(unsigned char),8000000,fp1)){
-//         for(int i = 0;i<ftell(fp1);i++){
-//             idx++;
-//             index--;
-//             if((int)c[i]<(int)syb){
-//                 sum += slect(1,file,".b",idx+1)-slect(1,file,".b",idx);
-//             }
-//             if((int)c[i] == (int)syb && index>0){
-//                 sum += slect(1,file,".b",idx+1)-slect(1,file,".b",idx);
-//             }
-//         }
-//     }
-//     fclose(fp1);
-//     free(c);
-//     return sum;
-// }
-// void inplace_reverse(char * str){
-//   if (str){
-//     char * end = str + strlen(str) - 1;
-// #   define XOR_SWAP(a,b) do\
-//     {\
-//       a ^= b;\
-//       b ^= a;\
-//       a ^= b;\
-//     } while (0)
-//     while (str < end){
-//       XOR_SWAP(*str, *end);
-//       str++;
-//       end--;
-//     }
-// #   undef XOR_SWAP
-//   }
-// }
-// int LF(char * file, int n, char symb,int *cs){
-//     int tmp = rank(1,file,".b",n);
-//     return slect(1,file,".bb",cs[(int)symb]+ rank(symb,file,".s",tmp)) + n - slect(1,file,".b",tmp);
-// }
-// // Merges two subarrays of arr[]. The first subarray is arr[l..m], the second subarray is arr[m+1..r] 
-// void merge(int arr[], int l, int m, int r) { 
-//     int i, j, k; 
-//     int n1 = m - l + 1; 
-//     int n2 =  r - m; 
-//     //create temp arrays 
-//     int L[n1], R[n2]; 
-//     // Copy data to temp arrays L[] and R[] 
-//     for (i = 0; i < n1; i++) 
-//         L[i] = arr[l + i]; 
-//     for (j = 0; j < n2; j++) 
-//         R[j] = arr[m + 1+ j]; 
-//     //Merge the temp arrays back into arr[l..r]
-//     i = 0; // Initial index of first subarray 
-//     j = 0; // Initial index of second subarray 
-//     k = l; // Initial index of merged subarray 
-//     while (i < n1 && j < n2) { 
-//         if (L[i] <= R[j]) { 
-//             arr[k] = L[i]; 
-//             i++; 
-//         }else{ 
-//             arr[k] = R[j]; 
-//             j++; 
-//         } 
-//         k++; 
-//     } 
-//     //Copy the remaining elements of L[], if there are any 
-//     while (i < n1) { 
-//         arr[k] = L[i]; 
-//         i++; 
-//         k++; 
-//     } 
-//     // Copy the remaining elements of R[], if there are any 
-//     while (j < n2) { 
-//         arr[k] = R[j]; 
-//         j++; 
-//         k++; 
-//     } 
-// } 
-// //l is for left index and r is right index of the sub-array of arr to be sorted 
-// void mergeSort(int arr[], int l, int r){ 
-//     if(l<r){ 
-//         // Same as (l+r)/2, but avoids overflow for large l and h 
-//         int m = l+(r-l)/2; 
-//         // Sort first and second halves 
-//         mergeSort(arr, l, m); 
-//         mergeSort(arr, m+1, r); 
-//         merge(arr, l, m, r); 
-//     } 
-// }
-// int *Next(char *file, int *c, int *sooc, int idx){
-//     int *next_idx = (int*)malloc(2*sizeof(int));
-//     next_idx[0] = 0;
-//     next_idx[1] = 0;
-//     for(int j = 1;j<256;j++){
-//         if(c[j]>=0){
-//             if(c[j]<idx){next_idx[0] = j;}else{break;} 
-//         }
-//     }
-//     int k = 1;
-//     char s = '\0';
-//     int ith = 0;
-//     //get indx in b of next_syb
-//     while(1){
-//         s = getSymbol(file,k);
-//         // printf("sooc %c %d\n",s,sooc[k-1]);
-//         if(s == (char)next_idx[0]){
-//             ith += sooc[k-1];
-//             // printf("%c %d %d\n",s,ith,idx-c[next_idx[0]]);
-//             // printf("%d %d\n",sooc[k-1],idx-c[next_idx[0]]);
-//             if(ith >= idx-c[next_idx[0]]){
-//                 // printf("%c %d %d\n",s,next_idx[1],idx-c[next_idx[0]]);
-//                 next_idx[1] += idx-c[next_idx[0]];
-//                 break;
-//             }
-//         }else{
-//             next_idx[1] += sooc[k-1];
-//         }
-//         k++;
-//     }
-//     return next_idx;
-// }
-// int *backwardSearch(char *file,int *cst,char *identifier){
-//     int *point = (int*)malloc(2*sizeof(int));
-//     int len = strlen(identifier);
-//     for(int i=len-1;i>-1;i--){
-//         //remember gap-filler 1s in b and bb, so position has to be positive for rank function in b and bb 
-//         if(i == len-1){
-//             point[0] = slect(1,file,".bb",cst[(int)identifier[i]]+1);
-//             //take negative input as the position argument to get the occurrence of first letter 
-//             //when doing backward search
-//             point[1] = slect(1,file,".bb",cst[(int)identifier[i]]+1+rank(identifier[i],file,".s",-1))-1;
-//             // printf("ss %d %d\n",point[0],point[1]);
-//         }else{
-//             //cs to get # of 1s before
-//             //rank to get the # of occ of current symbol up to the cloest 1
-//             //point[0]-slect(1,file,".b",rank(1,file,".b",point[0])) to get the i-th current symbol if it is 0 in b
-//             if(getSymbol(file,rank(1,file,".b",point[0]))==identifier[i] && (rank(1,file,".b",point[0])-rank(1,file,".b",point[0]-1)==0)){
-//                 int cn = rank(1,file,".b",point[0]);
-//                 point[0] = slect(1,file,".bb",cst[(int)identifier[i]]+rank(identifier[i],file,".s",cn))+point[0]-slect(1,file,".b",cn);
-//             }else{
-//                 point[0] = slect(1,file,".bb",cst[(int)identifier[i]]+1+rank(identifier[i],file,".s",rank(1,file,".b",point[0]-1)));
-//             }
-            
-//             if(
-//                 getSymbol(file,rank(1,file,".b",point[1]))==identifier[i] 
-//                 &&(rank(1,file,".b",point[1])-rank(1,file,".b",point[1]-1)==0)
-//                 // &&(rank(1,file,".b",point[1]-1)-rank(1,file,".b",point[1]-2)>0)
-//             ){
-//                 int cloest_one = slect(1,file,".b",rank(1,file,".b",point[1]));
-//                 point[1] = slect(1,file,".bb",cst[(int)identifier[i]]+rank(identifier[i],file,".s",rank(1,file,".b",point[1])))+point[1]-cloest_one;
-//                 // printf("%d\n",point[1]);
-
-//             }else{
-//                 point[1] = slect(1,file,".bb",cst[(int)identifier[i]]+1+rank(identifier[i],file,".s",rank(1,file,".b",point[1])))-1;
-//             }
-//         }
-//     }
-//     return point;
-// }
+void inplace_reverse(char * str){
+  if (str){
+    char * end = str + strlen(str) - 1;
+#   define XOR_SWAP(a,b) do\
+    {\
+      a ^= b;\
+      b ^= a;\
+      a ^= b;\
+    } while (0)
+    while (str < end){
+      XOR_SWAP(*str, *end);
+      str++;
+      end--;
+    }
+#   undef XOR_SWAP
+  }
+}
+// Merges two subarrays of arr[]. The first subarray is arr[l..m], the second subarray is arr[m+1..r] 
+void merge(int arr[], int l, int m, int r) { 
+    int i, j, k; 
+    int n1 = m - l + 1; 
+    int n2 =  r - m; 
+    //create temp arrays 
+    int L[n1], R[n2]; 
+    // Copy data to temp arrays L[] and R[] 
+    for (i = 0; i < n1; i++) 
+        L[i] = arr[l + i]; 
+    for (j = 0; j < n2; j++) 
+        R[j] = arr[m + 1+ j]; 
+    //Merge the temp arrays back into arr[l..r]
+    i = 0; // Initial index of first subarray 
+    j = 0; // Initial index of second subarray 
+    k = l; // Initial index of merged subarray 
+    while (i < n1 && j < n2) { 
+        if (L[i] <= R[j]) { 
+            arr[k] = L[i]; 
+            i++; 
+        }else{ 
+            arr[k] = R[j]; 
+            j++; 
+        } 
+        k++; 
+    } 
+    //Copy the remaining elements of L[], if there are any 
+    while (i < n1) { 
+        arr[k] = L[i]; 
+        i++; 
+        k++; 
+    } 
+    // Copy the remaining elements of R[], if there are any 
+    while (j < n2) { 
+        arr[k] = R[j]; 
+        j++; 
+        k++; 
+    } 
+} 
+//l is for left index and r is right index of the sub-array of arr to be sorted 
+void mergeSort(int arr[], int l, int r){ 
+    if(l<r){ 
+        // Same as (l+r)/2, but avoids overflow for large l and h 
+        int m = l+(r-l)/2; 
+        // Sort first and second halves 
+        mergeSort(arr, l, m); 
+        mergeSort(arr, m+1, r); 
+        merge(arr, l, m, r); 
+    } 
+}
+unsigned int *Next(char *file, int *c, int *sooc, int idx){
+    unsigned int *next_idx = (unsigned int*)malloc(2*sizeof(unsigned int));
+    next_idx[0] = 0;
+    next_idx[1] = 0;
+    for(unsigned int j = 1;j<256;j++){
+        if(c[j]>=0){
+            if(c[j]<idx){next_idx[0] = j;}else{break;} 
+        }
+    }
+    int k = 1;
+    char s = '\0';
+    int ith = 0;
+    //get indx in b of next_syb
+    while(1){
+        s = getSymbol(file,k);
+        // printf("sooc %c %d\n",s,sooc[k-1]);
+        if(s == (char)next_idx[0]){
+            ith += sooc[k-1];
+            // printf("%c %d %d\n",s,ith,idx-c[next_idx[0]]);
+            // printf("%d %d\n",sooc[k-1],idx-c[next_idx[0]]);
+            if(ith >= idx-c[next_idx[0]]){
+                // printf("%c %d %d\n",s,next_idx[1],idx-c[next_idx[0]]);
+                next_idx[1] += idx-c[next_idx[0]];
+                break;
+            }
+        }else{
+            next_idx[1] += sooc[k-1];
+        }
+        k++;
+    }
+    return next_idx;
+}
 void indexfolder(char *path){
     mkdir(path,0777);
 }
@@ -375,4 +306,105 @@ unsigned int *getSlectReadPos(char *writePath, char *filename,int num){
     }
     fclose(fp);
     return index;
+}
+unsigned int realRank(char target,char *file,char *extension,char *writePath, unsigned int index){
+    if(extension[1] == 's'){
+        return rank(target,file,extension,index,0);
+    }else{
+        char *dicname;
+        if(strlen(extension)==2){
+            dicname = "/b.dic";
+        }else
+        {
+            dicname = "/bb.dic";
+        }
+        unsigned int *rcnt = getRankReadPos(writePath,dicname,index);
+        unsigned int ct = rank(1,file,extension,index-rcnt[0]*25000*32,rcnt[0]*25000*4);
+        return ct+rcnt[1];
+    }
+}
+unsigned int realSelect(char target,char *file,char *extension,char *writePath, unsigned int num){
+    if(extension[1] == 's'){
+        return slect(target,file,extension,num,0);
+    }else{
+        char *dicname;
+        if(strlen(extension)==2){
+            dicname = "/b.dic";
+        }else
+        {
+            dicname = "/bb.dic";
+        }
+        unsigned int *slidx = getSlectReadPos(writePath,dicname,num);
+        unsigned int sidx = slect(1,file,extension,num-slidx[1],slidx[0]*25000*4);
+        return sidx+slidx[0]*25000*32;
+    }
+}
+unsigned int LF(char * file, unsigned int n, char symb,unsigned int *cs, char *writePath){
+    unsigned int tmp = realRank(1,file,".b",writePath,n);
+    return realSelect(1,file,".bb",writePath,cs[(int)symb]+ realRank(symb,file,".s",writePath,tmp)) + n - realSelect(1,file,".b",writePath,tmp);
+}
+//input a index and its symbol, output the number of rows before in F table
+//consists of two parts:
+//     //1. all symbols smaller that it
+//     //2. all symbols same as it but before idx in s
+unsigned int RowsBef(char *file,int index, char syb, char *writePath){
+    FILE *fp1;
+    fp1 = fopen(strcat(file,".s"),"rb");
+    removeExt(file,2);
+    unsigned char *c = (unsigned char*)malloc(8000000*sizeof(unsigned char));
+    unsigned int idx = 0;
+    unsigned int sum = 0;
+    while(fread(c,sizeof(unsigned char),8000000,fp1)){
+        for(int i = 0;i<ftell(fp1);i++){
+            idx++;
+            index--;
+            if((int)c[i]<(int)syb){
+                sum += realSelect(1,file,".b",writePath,idx+1)-realSelect(1,file,".b",writePath,idx);
+            }
+            if((int)c[i] == (int)syb && index>0){
+                sum += realSelect(1,file,".b",writePath,idx+1)-realSelect(1,file,".b",writePath,idx);
+            }
+        }
+    }
+    fclose(fp1);
+    free(c);
+    return sum;
+}
+unsigned int *backwardSearch(char *file,unsigned int *cst,char *identifier,char *writePath){
+    unsigned int *point = (unsigned int*)malloc(2*sizeof(unsigned int));
+    int len = strlen(identifier);
+    for(int i=len-1;i>-1;i--){
+        //remember gap-filler 1s in b and bb, so position has to be positive for rank function in b and bb 
+        if(i == len-1){
+            point[0] = realSelect(1,file,".bb",writePath,cst[(int)identifier[i]]+1);
+            //take negative input as the position argument to get the occurrence of first letter 
+            //when doing backward search
+            point[1] = realSelect(1,file,".bb",writePath,cst[(int)identifier[i]]+1+realRank(identifier[i],file,".s",writePath,-1))-1;
+            // printf("ss %d %d\n",point[0],point[1]);
+        }else{
+            //cs to get # of 1s before
+            //realRank to get the # of occ of current symbol up to the cloest 1
+            //point[0]-realSelect(1,file,".b",realRank(1,file,".b",point[0])) to get the i-th current symbol if it is 0 in b
+            if(getSymbol(file,realRank(1,file,".b",writePath,point[0]))==identifier[i] && (realRank(1,file,".b",writePath,point[0])-realRank(1,file,".b",writePath,point[0]-1)==0)){
+                unsigned int cn = realRank(1,file,".b",writePath,point[0]);
+                point[0] = realSelect(1,file,".bb",writePath,cst[(int)identifier[i]]+realRank(identifier[i],file,".s",writePath,cn))+point[0]-realSelect(1,file,".b",writePath,cn);
+            }else{
+                point[0] = realSelect(1,file,".bb",writePath,cst[(int)identifier[i]]+1+realRank(identifier[i],file,".s",writePath,realRank(1,file,".b",writePath,point[0]-1)));
+            }
+            
+            if(
+                getSymbol(file,realRank(1,file,".b",writePath,point[1]))==identifier[i] 
+                &&(realRank(1,file,".b",writePath,point[1])-realRank(1,file,".b",writePath,point[1]-1)==0)
+                // &&(realRank(1,file,".b",point[1]-1)-realRank(1,file,".b",point[1]-2)>0)
+            ){
+                int cloest_one = realSelect(1,file,".b",writePath,realRank(1,file,".b",writePath,point[1]));
+                point[1] = realSelect(1,file,".bb",writePath,cst[(int)identifier[i]]+realRank(identifier[i],file,".s",writePath,realRank(1,file,".b",writePath,point[1])))+point[1]-cloest_one;
+                // printf("%d\n",point[1]);
+
+            }else{
+                point[1] = realSelect(1,file,".bb",writePath,cst[(int)identifier[i]]+1+realRank(identifier[i],file,".s",writePath,realRank(1,file,".b",writePath,point[1])))-1;
+            }
+        }
+    }
+    return point;
 }
