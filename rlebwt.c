@@ -29,6 +29,7 @@ void CsTable(char *file,char *path){//file is command argument
             //when sum excceeds 128, how to write it into files??
             //solved by using fwrite instead of fputc
             fwrite(&sum,sizeof(i),1,fp);
+            // printf("%c %d\n",i,sum);
             sum += temp[i];
         }
     }
@@ -47,7 +48,7 @@ void CsTable(char *file,char *path){//file is command argument
         //2.4.3 get all this counts, cj,ck,....,cz
     //2.5 get the distance bewteen i and the closest 1, i-slect1(b,rank1(b,i))
 //so the corresponding index in bb of 0s in b is sum(cj,ck,....,cz)+i-slect1(b,rank1(b,i))+1
-void Check_bb(char *file,char *writePath){
+void Check_bb(char *file,char *writePath,unsigned int *ctab){
     FILE *fp1;
     char extn[] = ".bb";
     fp1 = fopen(strcat(file,extn),"rb");
@@ -115,13 +116,14 @@ void Check_bb(char *file,char *writePath){
                     //reduction of the time of reading files may be an approach to improve
                     if(bit == 0){
                         // get index in s
-                        unsigned int idx = realRank(1,file,".b",writePath,block*32+i+1);
+                        unsigned int numofones = realRank(1,file,".b",writePath,block*32+i+1);
                         // //get the symbol
-                        syb = getSymbol(file,idx);
+                        syb = getSymbol(file,numofones);
                         // printf("%c %d\n",syb,block*32+i+1);
                         // //get place of 0s in bb
-                        int place = block*32+i+1-realSelect(1,file,".b",writePath,idx)+RowsBef(file,idx,syb,writePath)+1;
-                        // printf("%d %d\n",block*32+i+1,place);
+                        unsigned int idx = realSelect(1,file,".b",writePath,numofones);
+                        int place = block*32+i+1-idx+RowsBef(file,writePath,ctab,syb,idx)+1;
+                        // int place = block*32+i+1-idx+RowsBef1(file,numofones,syb,writePath)+1;
                         //change the specific bit into 0
                         //to change the 1st bit from right hand side, need 1<<0; 1<<8 will do nothing
                         int atc = 0;
@@ -181,7 +183,9 @@ int *Search(char *file,char *cs, char *pattern,char *command,char *writePath){
     int *idtf = (int*)malloc(5001*sizeof(int));
     int count = 0;
     for(unsigned int i = frls[0];i<=frls[1];i++){
-        char sb = getSymbol(file,realRank(1,file,".b",writePath,i));
+        unsigned int ttp = realRank(1,file,".b",writePath,i);
+        // printf("%u\n",ttp);
+        char sb = getSymbol(file,ttp);
         unsigned int Sybfront = i;
         identifier = 0;
         char id[30] = {'\0'}; 
@@ -368,9 +372,13 @@ int main(int argc, char* argv[]){
     // unsigned int sidx = slect(1,readPath,".b",35-pos[1],pos[0]*25000*4);
     // printf("sum of the two %u\n",sidx+pos[0]*25000*4*8);
     // printf("%u\n",realSelect(1,readPath,".b",writePath,35));
-    
+    unsigned int *ctab = Ctable(readPath,writePath);
+    // char sbl[11]={'[','a','n','1','2','n','b','n','b',']','a'};
+    // for(int i=0;i<11;i++){
+    //     printf("%c %d %d\n",sbl[i],RowsBef1(readPath,i+1,sbl[i],writePath),RowsBef(ctab,sbl[i]));
+    // }
     CsTable(readPath,writePath);
-    Check_bb(readPath,writePath);
+    Check_bb(readPath,writePath,ctab);
     if(strcmp(option,"-n")){
         int *DupMatches = Search(readPath,"cs.txt",pattern,option,writePath);
         if(!strcmp(option,"-m")){
@@ -396,5 +404,6 @@ int main(int argc, char* argv[]){
         }
         // free(tmp);
     }
+    free(ctab);
     return 0;
 }
