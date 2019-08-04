@@ -26,26 +26,38 @@ unsigned int rank(char target, char *file,char *extsn, unsigned int position, un
         //because this will block the "if break" control flow
         fread(c,sizeof(unsigned char),8000000,fp);
         for(int i = 0;i<ftell(fp);i++){
+            if(position == 0){
+                break;
+            }
             position--;
             if (c[i] == target){
                 count++;
             };
-            if(position == 0){
-                break;
-            }
         }
         free(c);
     }else{//rank in b/bb file
         unsigned int *bitBlock = (unsigned int*)malloc(25000*sizeof(unsigned int));
         int read_size = sizeof(unsigned int);
+        int looptimes = 0;
         int len_read = 1;//when file is smaller than 4 bytes, this will record the number of bytes read
-        if(fread(bitBlock,read_size,25000,fp)==0){
-            len_read = ftell(fp);
+        fread(bitBlock,read_size,25000,fp);
+        if(ftell(fp)<4){
+            len_read = ftell(fp)%4;
+            looptimes = ftell(fp)/4;
             read_size = 1;
+        }else {
+            if(ftell(fp)%(25000*4)!=0){
+                looptimes = (ftell(fp)%(25000*4))/4;
+            }else{
+                looptimes = 25000;
+            }
         }
         fseek( fp, readBit, SEEK_SET );
         fread(bitBlock,read_size,25000,fp);
-        for(int i = 0;i<=ftell(fp)/4;i++){
+        for(int i = 0;i<=looptimes;i++){
+            if(position == 0){
+                break;
+            }
             for(int j = 0; j <read_size*8*len_read;j++){
                 position--;
                 if (getBit(bitBlock[i],j) == (int)target){
@@ -54,9 +66,6 @@ unsigned int rank(char target, char *file,char *extsn, unsigned int position, un
                 if(position == 0){
                     break;
                 }
-            }
-            if(position == 0){
-                break;
             }
         }
         free(bitBlock);
@@ -85,15 +94,24 @@ unsigned int slect(char target, char* file, char *extsn, unsigned int count, uns
     }else{//rank in b/bb file
         unsigned int *bitBlock = (unsigned int*)malloc(25000*sizeof(unsigned int));
         int read_size = sizeof(unsigned int);
+        int looptimes = 0;
         int len_read = 1;//when file is smaller than 4 bytes, this will record the number of bytes read
         // printf("%ld\n", ftell(fp)); //tell the position of file pointer 
-        if(fread(bitBlock,read_size,25000,fp)==0){
-            len_read = ftell(fp);
+        fread(bitBlock,read_size,25000,fp);
+        if(ftell(fp)<4){
+            len_read = ftell(fp)%4;
+            looptimes = ftell(fp)/4;
             read_size = 1;
+        }else {
+            if(ftell(fp)%(25000*4)!=0){
+                looptimes = (ftell(fp)%(25000*4))/4;
+            }else{
+                looptimes = 25000;
+            }
         }
         fseek( fp, readBlock, SEEK_SET );
         fread(bitBlock,read_size,25000,fp);
-        for(int i = 0;i<=ftell(fp)/4;i++){
+        for(int i = 0;i<=looptimes;i++){
             if(count == 0){
                 break;
             }
@@ -263,6 +281,31 @@ void Dict(char *file,char *ext, char *writePath){
     fclose(fp2);
     free(bitBlock);
 }
+// //summarize the occurrence of each symbol in s file
+// void SDict(char *file, char *writePath){
+//     FILE *fp = fopen(strcat(file,".s"),"rb");
+//     removeExt(file,2);
+//     FILE *fp1 = fopen(strcat(writePath,"/s.dic"),"wb");
+//     removeExt(file,strlen("/s.dic"));
+//     char s[1000] = {'\0'};
+//     unsigned int occ[128]={0};
+//     int size = 1000;
+//     while(fread(&s,sizeof(char),1000,fp)){
+//         if(ftell(fp)< 1000){
+//             size = ftell(fp);
+//         }
+//         if(ftell(fp)> 1000 && ftell(fp)%1000 != 0){
+//             size = ftell(fp)%1000;
+//         }
+//         for(int i = 0; i<size;i++){
+//             occ[(int)s[i]] ++;
+//             // printf("%c %u %u\n",s[i],occ[(int)s[i]],realRank(s[i],file,".s",writePath,i+1));
+//         }
+//         fwrite(occ,sizeof(unsigned int),128,fp1);
+//     }
+//     fclose(fp);
+//     fclose(fp1);
+// }
 //return pos of block for the target number of 1s
 unsigned int *getRankReadPos(char *writePath, char *filename,unsigned int num){
     FILE *fp = fopen(strcat(writePath,filename),"rb");
@@ -287,7 +330,7 @@ unsigned int *getRankReadPos(char *writePath, char *filename,unsigned int num){
     return count;
 }
 //return pos of block for the target number of 1s
-unsigned int *getSlectReadPos(char *writePath, char *filename,int num){
+unsigned int *getSlectReadPos(char *writePath, char *filename,unsigned int num){
     FILE *fp = fopen(strcat(writePath,filename),"rb");
     removeExt(writePath,strlen(filename));
     unsigned int *index = (unsigned int*)malloc(2*sizeof(unsigned int));
@@ -307,6 +350,46 @@ unsigned int *getSlectReadPos(char *writePath, char *filename,int num){
     fclose(fp);
     return index;
 }
+// unsigned int *SRankReadPos(char target, char *writePath, char *filename, unsigned int idx){
+//     FILE *fp = fopen(strcat(writePath,filename),"rb");
+//     removeExt(writePath,strlen(filename));
+//     unsigned int *count = (unsigned int*)malloc(2*sizeof(unsigned int));
+//     count[0] = 0;
+//     count[1] = 0;
+//     unsigned int tmp[128] = {0};
+//     unsigned int pos = 0;
+//     while(fread(tmp,sizeof(unsigned int),128,fp))
+//     {
+//         if( pos*1000>idx ){
+//             break;
+//         }
+//         pos++;
+//         count[1] = tmp[(int)target];
+//     }
+//     count[0] = pos;
+//     fclose(fp);
+//     return count;
+// }
+// unsigned int *SSelectReadPos(char target, char *writePath, char *filename, unsigned int num){
+//     FILE *fp = fopen(strcat(writePath,filename),"rb");
+//     removeExt(writePath,strlen(filename));
+//     unsigned int *count = (unsigned int*)malloc(2*sizeof(unsigned int));
+//     count[0] = 0;
+//     count[1] = 0;
+//     unsigned int tmp[128] = {0};
+//     unsigned int pos = 0;
+//     while(fread(tmp,sizeof(unsigned int),128,fp))
+//     {
+//         if(tmp[(int)target]>num){
+//             break;
+//         }
+//         pos++;
+//         count[1] = tmp[(int)target];
+//     }
+//     count[0] = pos;
+//     fclose(fp);
+//     return count;
+// }
 unsigned int realRank(char target,char *file,char *extension,char *writePath, unsigned int index){
     if(extension[1] == 's'){
         return rank(target,file,extension,index,0);
@@ -345,7 +428,7 @@ unsigned int LF(char * file, unsigned int n, char symb,unsigned int *cs, char *w
 }
 //input a index and its symbol, output the number of rows before in F table
 //consists of two parts:
-//     //1. all symbols smaller that it
+//     //1. all symbols smaller than it
 //     //2. all symbols same as it but before idx in s
 unsigned int RowsBef(char *file,int index, char syb, char *writePath){
     FILE *fp1;

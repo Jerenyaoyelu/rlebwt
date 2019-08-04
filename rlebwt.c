@@ -14,7 +14,7 @@ void CsTable(char *file,char *path){//file is command argument
     FILE *fp = fopen(strcat(file,".s"),"r");
     removeExt(file,2);
     char s = '\0';
-    unsigned int temp[256]={0};
+    unsigned int temp[128]={0};
     while(fread(&s,sizeof(s),1,fp)){
         temp[(int)s] ++;
     }
@@ -23,10 +23,10 @@ void CsTable(char *file,char *path){//file is command argument
     // removeExt(path,strlen("/cs.txt"));
     fp = fopen(strcat(path,"/cs.txt"),"wb");
     removeExt(path,strlen("cs.txt"));
-    for(unsigned int i = 0;i<256;i++){
+    for(unsigned int i = 0;i<128;i++){
         if(temp[i]>0){
             fwrite(&i,sizeof(i),1,fp);
-            //when sum excceeds 256, how to write it into files??
+            //when sum excceeds 128, how to write it into files??
             //solved by using fwrite instead of fputc
             fwrite(&sum,sizeof(i),1,fp);
             sum += temp[i];
@@ -49,7 +49,7 @@ void CsTable(char *file,char *path){//file is command argument
 //so the corresponding index in bb of 0s in b is sum(cj,ck,....,cz)+i-slect1(b,rank1(b,i))+1
 void Check_bb(char *file,char *writePath){
     FILE *fp1;
-    char extn[] = ".bbb";
+    char extn[] = ".bb";
     fp1 = fopen(strcat(file,extn),"rb");
     removeExt(file,strlen(extn));
     if(fp1 == NULL){
@@ -153,7 +153,7 @@ void Check_bb(char *file,char *writePath){
 int *Search(char *file,char *cs, char *pattern,char *command,char *writePath){
     int len = strlen(pattern);
     char c = pattern[len-1];
-    unsigned int cst[256] = {0};
+    unsigned int cst[128] = {0};
     //read cs table
     FILE *fp = fopen(strcat(writePath,cs),"rb");
     removeExt(writePath,strlen(cs));
@@ -171,6 +171,7 @@ int *Search(char *file,char *cs, char *pattern,char *command,char *writePath){
     }
     fclose(fp);
     unsigned int *frls = backwardSearch(file,cst,pattern,writePath);
+    // printf("%u %u\n",frls[0],frls[1]);
     // if(!strcmp(command,"-m")){
     //     return frls;
     // }else{
@@ -214,13 +215,13 @@ char *findRecord(char *file,char *cs,char *identifier,char *writePath){
     int read_size = sizeof(unsigned int);
     int len_read = 1;
     int ones = 1;
-    int c[256];
+    int c[128];
     //init c table
     //then I can grab the first symbol of bb in c
-    for(int j = 1;j<256;j++){
+    for(int j = 1;j<128;j++){
         c[j] = -1;
     }
-    int temp[256] = {0};
+    int temp[128] = {0};
     int amount = 0;
     int *sooc = (int*)malloc(500000*sizeof(int));
     unsigned int *b = (unsigned int*)malloc(1000000*sizeof(unsigned int));
@@ -264,7 +265,7 @@ char *findRecord(char *file,char *cs,char *identifier,char *writePath){
     free(b);
     //c[0] stores the number of gap-filler ones
     int rowsBf = 0;
-    for(int i = 1;i<256;i++){
+    for(int i = 1;i<128;i++){
         if(temp[i]>0){
             c[i] = rowsBf;
             rowsBf += temp[i];
@@ -273,7 +274,7 @@ char *findRecord(char *file,char *cs,char *identifier,char *writePath){
     }
     //search record
     //read cs table
-    unsigned int cst[256] = {0};
+    unsigned int cst[128] = {0};
     FILE *fp = fopen(strcat(writePath,cs),"rb");
     removeExt(writePath,strlen(cs));
     unsigned int tmp = 0;
@@ -355,6 +356,7 @@ int main(int argc, char* argv[]){
     //make a summation of b and bb file
     Dict(readPath,".b",writePath);
     Dict(readPath,".bb",writePath);
+    // SDict(readPath,writePath);
     // //way to make use of the summation and call rank and slect
     // unsigned int *rankpos = getRankReadPos(writePath,"/b.dic",58);
     // //rank(target,filepath,extension,remainder_index,fseekpoint(in bytes))
@@ -366,7 +368,7 @@ int main(int argc, char* argv[]){
     // unsigned int sidx = slect(1,readPath,".b",35-pos[1],pos[0]*25000*4);
     // printf("sum of the two %u\n",sidx+pos[0]*25000*4*8);
     // printf("%u\n",realSelect(1,readPath,".b",writePath,35));
-
+    
     CsTable(readPath,writePath);
     Check_bb(readPath,writePath);
     if(strcmp(option,"-n")){
