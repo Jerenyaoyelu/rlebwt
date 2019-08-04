@@ -174,7 +174,7 @@ void inplace_reverse(char * str){
   }
 }
 // Merges two subarrays of arr[]. The first subarray is arr[l..m], the second subarray is arr[m+1..r] 
-void merge(int arr[], int l, int m, int r) { 
+void merge(unsigned int arr[], int l, int m, int r) { 
     int i, j, k; 
     int n1 = m - l + 1; 
     int n2 =  r - m; 
@@ -213,7 +213,7 @@ void merge(int arr[], int l, int m, int r) {
     } 
 } 
 //l is for left index and r is right index of the sub-array of arr to be sorted 
-void mergeSort(int arr[], int l, int r){ 
+void mergeSort(unsigned int arr[], int l, int r){ 
     if(l<r){ 
         // Same as (l+r)/2, but avoids overflow for large l and h 
         int m = l+(r-l)/2; 
@@ -491,92 +491,92 @@ unsigned int *backwardSearch(char *file,unsigned int *cst,char *identifier,char 
     }
     return point;
 }
-unsigned int *Ctable(char *readPath, char *writePath){
-    FILE *fp1;
-    fp1 = fopen(strcat(readPath,".b"),"rb");
-    removeExt(readPath,2);
-    char symbol = '\0';
-    int read_size = sizeof(unsigned int);
-    int len_read = 0;
-    unsigned int temp[128] = {0};
-    unsigned int *c = (unsigned int*)malloc(128*sizeof(unsigned int));
-    //init c table
-    //then I can grab the first symbol of bb in c
-    for(int j = 1;j<128;j++){
-        c[j] = 0;
-    }
-    unsigned int *b = (unsigned int*)malloc(1000000*sizeof(unsigned int));
-    //to see if the size of file is smaller than 4 bytes
-    if(fread(b,read_size,1000000,fp1)==0){
-        read_size = 1;
-    }
-    fseek(fp1,0,SEEK_SET);
-    while(fread(b,read_size,1000000,fp1)){
-        if(ftell(fp1)<1000000){
-            len_read = ftell(fp1);
-        }else{
-            if(ftell(fp1)%1000000 == 0){
-                len_read = 1000000;
-            }else{
-                len_read = ftell(fp1)%1000000;
-            }
-        }
-        for(int i = 1; i<=len_read*read_size*8;i++){
-            symbol = getSymbol(readPath,realRank(1,readPath,".b",writePath,i));
-            if(symbol!='\0'){
-                temp[(int)symbol] +=1;
-            }
-        }
-        free(b);
-        b = (unsigned int*)malloc(1000000*sizeof(unsigned int));
-    }
-    fclose(fp1);
-    free(b);
-    //c[0] stores the number of gap-filler ones
-    int rowsBf = 0;
-    for(int i = 1;i<128;i++){
-        if(temp[i]>0){
-            c[i] = rowsBf;
-            rowsBf += temp[i];
-            // printf("%c %d\n",i,c[i]);
-        }
-    }
-    return c;
-}
-//input a index and its symbol, output the number of rows before in F table
-//consists of two parts:
-//     //1. all symbols smaller than it
-//     //2. all symbols same as it but before idx in s
-// unsigned int RowsBef1(char *file,int index, char syb, char *writePath){
+// unsigned int *Ctable(char *readPath, char *writePath){
 //     FILE *fp1;
-//     fp1 = fopen(strcat(file,".s"),"rb");
-//     removeExt(file,2);
-//     unsigned char *c = (unsigned char*)malloc(8000000*sizeof(unsigned char));
-//     unsigned int idx = 0;
-//     unsigned int sum = 0;
-//     while(fread(c,sizeof(unsigned char),8000000,fp1)){
-//         for(int i = 0;i<ftell(fp1);i++){
-//             idx++;
-//             index--;
-//             if((int)c[i]<(int)syb){
-//                 sum += realSelect(1,file,".b",writePath,idx+1)-realSelect(1,file,".b",writePath,idx);
-//             }
-//             if((int)c[i] == (int)syb && index>0){
-//                 sum += realSelect(1,file,".b",writePath,idx+1)-realSelect(1,file,".b",writePath,idx);
+//     fp1 = fopen(strcat(readPath,".b"),"rb");
+//     removeExt(readPath,2);
+//     char symbol = '\0';
+//     int read_size = sizeof(unsigned int);
+//     int len_read = 0;
+//     unsigned int temp[128] = {0};
+//     unsigned int *c = (unsigned int*)malloc(128*sizeof(unsigned int));
+//     //init c table
+//     //then I can grab the first symbol of bb in c
+//     for(int j = 1;j<128;j++){
+//         c[j] = 0;
+//     }
+//     unsigned int *b = (unsigned int*)malloc(1000000*sizeof(unsigned int));
+//     //to see if the size of file is smaller than 4 bytes
+//     if(fread(b,read_size,1000000,fp1)==0){
+//         read_size = 1;
+//     }
+//     fseek(fp1,0,SEEK_SET);
+//     while(fread(b,read_size,1000000,fp1)){
+//         if(ftell(fp1)<1000000){
+//             len_read = ftell(fp1);
+//         }else{
+//             if(ftell(fp1)%1000000 == 0){
+//                 len_read = 1000000;
+//             }else{
+//                 len_read = ftell(fp1)%1000000;
 //             }
 //         }
+//         for(int i = 1; i<=len_read*read_size*8;i++){
+//             symbol = getSymbol(readPath,realRank(1,readPath,".b",writePath,i));
+//             if(symbol!='\0'){
+//                 temp[(int)symbol] +=1;
+//             }
+//         }
+//         free(b);
+//         b = (unsigned int*)malloc(1000000*sizeof(unsigned int));
 //     }
 //     fclose(fp1);
-//     free(c);
-//     return sum;
+//     free(b);
+//     //c[0] stores the number of gap-filler ones
+//     int rowsBf = 0;
+//     for(int i = 1;i<128;i++){
+//         if(temp[i]>0){
+//             c[i] = rowsBf;
+//             rowsBf += temp[i];
+//             // printf("%c %d\n",i,c[i]);
+//         }
+//     }
+//     return c;
 // }
-unsigned int RowsBef(char *readPath,char *writePath, unsigned int *ctab,char syb, unsigned int idx){
-    // unsigned int temp = realRank(syb,readPath,".s",writePath,idx-1);
-    unsigned int temp = 0;
-    for(int i = 1;i<idx;i++){
-        if(getSymbol(readPath,realRank(1,readPath,".b",writePath,i)) == syb){
-            temp++;
+// input a index and its symbol, output the number of rows before in F table
+// consists of two parts:
+    //1. all symbols smaller than it
+    //2. all symbols same as it but before idx in s
+unsigned int RowsBef1(char *file,int index, char syb, char *writePath){
+    FILE *fp1;
+    fp1 = fopen(strcat(file,".s"),"rb");
+    removeExt(file,2);
+    unsigned char *c = (unsigned char*)malloc(8000000*sizeof(unsigned char));
+    unsigned int idx = 0;
+    unsigned int sum = 0;
+    while(fread(c,sizeof(unsigned char),8000000,fp1)){
+        for(int i = 0;i<ftell(fp1);i++){
+            idx++;
+            index--;
+            if((int)c[i]<(int)syb){
+                sum += realSelect(1,file,".b",writePath,idx+1)-realSelect(1,file,".b",writePath,idx);
+            }
+            if((int)c[i] == (int)syb && index>0){
+                sum += realSelect(1,file,".b",writePath,idx+1)-realSelect(1,file,".b",writePath,idx);
+            }
         }
     }
-    return ctab[syb]+temp;
+    fclose(fp1);
+    free(c);
+    return sum;
 }
+// unsigned int RowsBef(char *readPath,char *writePath, unsigned int *ctab,char syb, unsigned int idx){
+//     // unsigned int temp = realRank(syb,readPath,".s",writePath,idx-1);
+//     unsigned int temp = 0;
+//     for(int i = 1;i<idx;i++){
+//         if(getSymbol(readPath,realRank(1,readPath,".b",writePath,i)) == syb){
+//             temp++;
+//         }
+//     }
+//     return ctab[syb]+temp;
+// }

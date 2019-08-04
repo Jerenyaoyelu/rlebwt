@@ -2,6 +2,7 @@
 #include<stdlib.h>
 #include<string.h>
 #include<math.h>
+#include<ctype.h>
 
 #include "f1.h"
 
@@ -48,7 +49,8 @@ void CsTable(char *file,char *path){//file is command argument
         //2.4.3 get all this counts, cj,ck,....,cz
     //2.5 get the distance bewteen i and the closest 1, i-slect1(b,rank1(b,i))
 //so the corresponding index in bb of 0s in b is sum(cj,ck,....,cz)+i-slect1(b,rank1(b,i))+1
-void Check_bb(char *file,char *writePath,unsigned int *ctab){
+void Check_bb(char *file,char *writePath){
+// void Check_bb(char *file,char *writePath,unsigned int *ctab){
     FILE *fp1;
     char extn[] = ".bb";
     fp1 = fopen(strcat(file,extn),"rb");
@@ -122,8 +124,8 @@ void Check_bb(char *file,char *writePath,unsigned int *ctab){
                         // printf("%c %d\n",syb,block*32+i+1);
                         // //get place of 0s in bb
                         unsigned int idx = realSelect(1,file,".b",writePath,numofones);
-                        int place = block*32+i+1-idx+RowsBef(file,writePath,ctab,syb,idx)+1;
-                        // int place = block*32+i+1-idx+RowsBef1(file,numofones,syb,writePath)+1;
+                        // int place = block*32+i+1-idx+RowsBef(file,writePath,ctab,syb,idx)+1;
+                        int place = block*32+i+1-idx+RowsBef1(file,numofones,syb,writePath)+1;
                         //change the specific bit into 0
                         //to change the 1st bit from right hand side, need 1<<0; 1<<8 will do nothing
                         int atc = 0;
@@ -152,7 +154,7 @@ void Check_bb(char *file,char *writePath,unsigned int *ctab){
         free(bitBlock);
     }
 }
-int *Search(char *file,char *cs, char *pattern,char *command,char *writePath){
+unsigned int *Search(char *file,char *cs, char *pattern,char *command,char *writePath){
     int len = strlen(pattern);
     char c = pattern[len-1];
     unsigned int cst[128] = {0};
@@ -174,24 +176,23 @@ int *Search(char *file,char *cs, char *pattern,char *command,char *writePath){
     fclose(fp);
     unsigned int *frls = backwardSearch(file,cst,pattern,writePath);
     // printf("%u %u\n",frls[0],frls[1]);
-    // if(!strcmp(command,"-m")){
-    //     return frls;
-    // }else{
-    // printf("%d %d\n",frls[0],frls[1]);
-    //problems: can't find the third 'ana' in shopping,why?
-    //possible reason: file is too large, cannot read all
-    int *idtf = (int*)malloc(5001*sizeof(int));
+    if(!strcmp(command,"-m") && !isdigit(pattern[0])){
+        return frls;
+    }
+    unsigned int *idtf = (unsigned int*)malloc(5001*sizeof(unsigned int));
     int count = 0;
     for(unsigned int i = frls[0];i<=frls[1];i++){
         unsigned int ttp = realRank(1,file,".b",writePath,i);
-        // printf("%u\n",ttp);
         char sb = getSymbol(file,ttp);
         unsigned int Sybfront = i;
         identifier = 0;
         char id[30] = {'\0'}; 
-        //too slow
         while(sb != '['){
             Sybfront = LF(file,Sybfront,sb,cst,writePath);
+            // printf("%u\n",Sybfront);
+            if(!isdigit(pattern[0])){
+                if(Sybfront<=frls[1]&&Sybfront>=frls[0]){break;}
+            }
             if(sb == ']'){identifier = 1;}
             if(identifier == 1 && sb != ']'){
                 id[strlen(id)] = sb;
@@ -372,17 +373,20 @@ int main(int argc, char* argv[]){
     // unsigned int sidx = slect(1,readPath,".b",35-pos[1],pos[0]*25000*4);
     // printf("sum of the two %u\n",sidx+pos[0]*25000*4*8);
     // printf("%u\n",realSelect(1,readPath,".b",writePath,35));
-    unsigned int *ctab = Ctable(readPath,writePath);
-    // char sbl[11]={'[','a','n','1','2','n','b','n','b',']','a'};
-    // for(int i=0;i<11;i++){
-    //     printf("%c %d %d\n",sbl[i],RowsBef1(readPath,i+1,sbl[i],writePath),RowsBef(ctab,sbl[i]));
-    // }
+
+    //if generate c table here, will slow the program a lot, 40s
+    // unsigned int *ctab = Ctable(readPath,writePath);
     CsTable(readPath,writePath);
-    Check_bb(readPath,writePath,ctab);
+    // Check_bb(readPath,writePath,ctab);
+    Check_bb(readPath,writePath);
     if(strcmp(option,"-n")){
-        int *DupMatches = Search(readPath,"cs.txt",pattern,option,writePath);
+        unsigned int *DupMatches = Search(readPath,"cs.txt",pattern,option,writePath);
         if(!strcmp(option,"-m")){
-            if(DupMatches[0]>0){printf("%d\n",DupMatches[0]);}
+            if(!isdigit(pattern[0])){
+                if(DupMatches[0]<=DupMatches[1]){printf("%d\n",DupMatches[1]-DupMatches[0]+1);}
+            }else{
+                if(DupMatches[0]>0){printf("%d\n",DupMatches[0]);}
+            }
         }else{
             int last_elmt = -1;
             int uniq = 0;
@@ -404,6 +408,6 @@ int main(int argc, char* argv[]){
         }
         // free(tmp);
     }
-    free(ctab);
+    // free(ctab);
     return 0;
 }
