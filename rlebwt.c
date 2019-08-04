@@ -356,7 +356,7 @@ int main(int argc, char* argv[]){
     //make a summation of b and bb file
     Dict(readPath,".b",writePath);
     Dict(readPath,".bb",writePath);
-    // SDict(readPath,writePath);
+    SDict(readPath,writePath);
     // //way to make use of the summation and call rank and slect
     // unsigned int *rankpos = getRankReadPos(writePath,"/b.dic",58);
     // //rank(target,filepath,extension,remainder_index,fseekpoint(in bytes))
